@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use velollm_core::hardware::HardwareSpec;
+use velollm_benchmarks::{BenchmarkRunner, get_standard_benchmarks};
 
 #[derive(Parser)]
 #[command(name = "velollm")]
@@ -17,9 +18,15 @@ enum Commands {
 
     /// Run benchmarks
     Benchmark {
+        /// Backend to use (ollama, llamacpp)
         #[arg(short, long, default_value = "ollama")]
         backend: String,
 
+        /// Model to benchmark
+        #[arg(short, long, default_value = "llama3.2:3b")]
+        model: String,
+
+        /// Output file for results (JSON)
         #[arg(short, long)]
         output: Option<String>,
     },
@@ -36,7 +43,8 @@ enum Commands {
     },
 }
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -89,12 +97,72 @@ fn main() -> anyhow::Result<()> {
             println!("{}", serde_json::to_string_pretty(&hw)?);
         }
 
-        Commands::Benchmark { backend, output } => {
-            println!("Benchmark command - backend: {}", backend);
-            if let Some(path) = output {
-                println!("Output will be saved to: {}", path);
+        Commands::Benchmark { backend, model, output } => {
+            println!("🚀 VeloLLM Benchmark Suite\n");
+            println!("Backend: {}", backend);
+            println!("Model: {}\n", model);
+
+            // Check if Ollama is running
+            let runner = BenchmarkRunner::new(&backend);
+
+            print!("Checking Ollama availability... ");
+            if !runner.check_ollama_available().await? {
+                println!("❌");
+                anyhow::bail!("Ollama is not running. Please start Ollama and ensure the model '{}' is available.", model);
             }
-            println!("TODO: Implement in TASK-004");
+            println!("✓\n");
+
+            // Get standard benchmarks
+            let benchmarks = get_standard_benchmarks(&model);
+
+            println!("Running {} benchmarks...\n", benchmarks.len());
+            println!("═══════════════════════════════════════════════════════\n");
+
+            let mut results = Vec::new();
+            for config in benchmarks {
+                match runner.run(&config).await {
+                    Ok(result) => {
+                        results.push(result);
+                    }
+                    Err(e) => {
+                        eprintln!("❌ Benchmark '{}' failed: {}", config.name, e);
+                        continue;
+                    }
+                }
+            }
+
+            // Summary
+            println!("═══════════════════════════════════════════════════════");
+            println!("\n📊 Benchmark Summary\n");
+
+            for result in &results {
+                println!("{}:", result.config.name);
+                println!("  Tokens/s: {:.1}", result.tokens_per_second);
+                println!("  TTFT: {:.1}ms", result.time_to_first_token_ms);
+                println!("  Total tokens: {}", result.total_tokens);
+                println!("  Total time: {:.1}s", result.total_time_ms / 1000.0);
+                println!();
+            }
+
+            // Overall average
+            if !results.is_empty() {
+                let avg_tps: f64 = results.iter().map(|r| r.tokens_per_second).sum::<f64>() / results.len() as f64;
+                let avg_ttft: f64 = results.iter().map(|r| r.time_to_first_token_ms).sum::<f64>() / results.len() as f64;
+
+                println!("Overall Average:");
+                println!("  Tokens/s: {:.1}", avg_tps);
+                println!("  TTFT: {:.1}ms", avg_ttft);
+                println!();
+            }
+
+            // Save results if output specified
+            if let Some(path) = output {
+                let json = serde_json::to_string_pretty(&results)?;
+                std::fs::write(&path, json)?;
+                println!("✅ Results saved to: {}", path);
+            } else {
+                println!("💡 Tip: Use -o <file> to save results to JSON");
+            }
         }
 
         Commands::Optimize { dry_run, output } => {
