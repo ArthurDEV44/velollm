@@ -1,0 +1,32 @@
+{
+  "name": "velollm",
+  "version": "0.1.0",
+  "description": "VeloLLM - Autopilot for Local LLM Inference",
+  "private": true,
+  "scripts": {
+    "build": "cargo build --release",
+    "test": "cargo test --all",
+    "fmt": "cargo fmt --all",
+    "lint": "cargo clippy --all -- -D warnings",
+    "check": "cargo check --all"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/velollm.git"
+  },
+  "keywords": [
+    "llm",
+    "inference",
+    "optimization",
+    "ollama",
+    "llama.cpp",
+    "ai",
+    "ml"
+  ],
+  "author": "VeloLLM Contributors",
+  "license": "MIT",
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

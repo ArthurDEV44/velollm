@@ -1,0 +1,16 @@
+[package]
+name = "velollm-benchmarks"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+velollm-core = { path = "../velollm-core" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
