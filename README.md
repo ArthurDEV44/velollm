@@ -4,6 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=flat&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![CI](https://github.com/ArthurDEV44/velollm/actions/workflows/ci.yml/badge.svg)](https://github.com/ArthurDEV44/velollm/actions/workflows/ci.yml)
 
 ## The Problem
 
@@ -26,7 +27,7 @@ Local LLM inference is **35-50x slower** than cloud solutions (vLLM, Morph) desp
 cargo install velollm
 
 # From source
-git clone https://github.com/yourusername/velollm
+git clone https://github.com/ArthurDEV44/velollm.git
 cd velollm
 cargo install --path velollm-cli
 ```
@@ -122,7 +123,7 @@ See [BENCHMARKS.md](BENCHMARKS.md) for methodology and detailed results.
 | Task | Status |
 |------|--------|
 | Repository setup | ✅ Complete |
-| Build system | 🚧 In progress |
+| Build system | ✅ Complete |
 | Hardware detection | ⏳ Planned |
 | Benchmarking suite | ⏳ Planned |
 | Speculative decoding PoC | ⏳ Planned |
@@ -214,12 +215,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/velollm/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/velollm/discussions)
-- **Email**: velollm@example.com (placeholder)
+- **Issues**: [GitHub Issues](https://github.com/ArthurDEV44/velollm/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ArthurDEV44/velollm/discussions)
+- **Repository**: [github.com/ArthurDEV44/velollm](https://github.com/ArthurDEV44/velollm)
 
 ---
 
-**Status**: Early development - contributions and feedback welcome!
+**Status**: 🚧 Early development - Phase 1 MVP in progress
 
-Built with by the VeloLLM community.
+Built with ❤️ by the VeloLLM community.
