@@ -24,6 +24,7 @@ pub struct BenchmarkResult {
 }
 
 pub struct BenchmarkRunner {
+    #[allow(dead_code)] // Will be used in TASK-004
     backend: String,
 }
 

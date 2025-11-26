@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use sysinfo::{System, SystemExt};
+use sysinfo::System;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HardwareSpec {
@@ -92,7 +92,7 @@ fn detect_gpu() -> Option<GpuInfo> {
 }
 
 /// Detect NVIDIA GPU using nvidia-smi
-fn detect_nvidia_gpu() -> Option<GpuInfo> {
+pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
     let output = Command::new("nvidia-smi")
         .args(&[
             "--query-gpu=name,memory.total,memory.free,driver_version,compute_cap",
@@ -242,6 +242,7 @@ fn detect_unified_memory() -> u64 {
 }
 
 #[cfg(not(target_os = "macos"))]
+#[allow(dead_code)]
 fn detect_unified_memory() -> u64 {
     0
 }
@@ -278,12 +279,16 @@ fn detect_intel_gpu() -> Option<GpuInfo> {
 /// Detect CPU information
 fn detect_cpu() -> anyhow::Result<CpuInfo> {
     let mut sys = System::new_all();
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
 
-    let cpu_name = sys.global_cpu_info().brand().to_string();
+    let cpu_name = sys.cpus().first()
+        .map(|cpu| cpu.brand().to_string())
+        .unwrap_or_else(|| "Unknown CPU".to_string());
     let cores = num_cpus::get_physical() as u32;
     let threads = num_cpus::get() as u32;
-    let frequency = sys.global_cpu_info().frequency();
+    let frequency = sys.cpus().first()
+        .map(|cpu| cpu.frequency())
+        .unwrap_or(0);
 
     Ok(CpuInfo {
         model: if cpu_name.is_empty() {
@@ -306,9 +311,10 @@ fn detect_memory() -> anyhow::Result<MemoryInfo> {
     let mut sys = System::new_all();
     sys.refresh_memory();
 
-    let total = sys.total_memory() / 1024; // KB to MB
-    let available = sys.available_memory() / 1024;
-    let used = sys.used_memory() / 1024;
+    // sysinfo returns memory in bytes
+    let total = sys.total_memory() / (1024 * 1024); // Bytes to MB
+    let available = sys.available_memory() / (1024 * 1024);
+    let used = sys.used_memory() / (1024 * 1024);
 
     Ok(MemoryInfo {
         total_mb: total,
