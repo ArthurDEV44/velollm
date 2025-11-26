@@ -41,7 +41,51 @@ fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Detect => {
+            println!("🔍 Detecting hardware configuration...\n");
+
             let hw = HardwareSpec::detect()?;
+
+            // Pretty print hardware info
+            println!("=== System Information ===");
+            println!("OS: {}", hw.os);
+            println!("Platform: {}", hw.platform);
+            println!();
+
+            println!("=== CPU ===");
+            println!("Model: {}", hw.cpu.model);
+            println!("Cores: {}", hw.cpu.cores);
+            println!("Threads: {}", hw.cpu.threads);
+            if let Some(freq) = hw.cpu.frequency_mhz {
+                println!("Frequency: {} MHz", freq);
+            }
+            println!();
+
+            println!("=== Memory ===");
+            println!("Total: {} MB ({:.1} GB)", hw.memory.total_mb, hw.memory.total_mb as f64 / 1024.0);
+            println!("Available: {} MB ({:.1} GB)", hw.memory.available_mb, hw.memory.available_mb as f64 / 1024.0);
+            println!("Used: {} MB ({:.1} GB)", hw.memory.used_mb, hw.memory.used_mb as f64 / 1024.0);
+            println!();
+
+            if let Some(ref gpu) = hw.gpu {
+                println!("=== GPU ===");
+                println!("Name: {}", gpu.name);
+                println!("Vendor: {:?}", gpu.vendor);
+                println!("VRAM Total: {} MB ({:.1} GB)", gpu.vram_total_mb, gpu.vram_total_mb as f64 / 1024.0);
+                println!("VRAM Free: {} MB ({:.1} GB)", gpu.vram_free_mb, gpu.vram_free_mb as f64 / 1024.0);
+                if let Some(ref driver) = gpu.driver_version {
+                    println!("Driver: {}", driver);
+                }
+                if let Some(ref compute) = gpu.compute_capability {
+                    println!("Compute Capability: {}", compute);
+                }
+                println!();
+            } else {
+                println!("=== GPU ===");
+                println!("No GPU detected (CPU-only mode)");
+                println!();
+            }
+
+            println!("=== JSON Output ===");
             println!("{}", serde_json::to_string_pretty(&hw)?);
         }
 
