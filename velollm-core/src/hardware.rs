@@ -94,7 +94,7 @@ fn detect_gpu() -> Option<GpuInfo> {
 /// Detect NVIDIA GPU using nvidia-smi
 pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
     let output = Command::new("nvidia-smi")
-        .args(&[
+        .args([
             "--query-gpu=name,memory.total,memory.free,driver_version,compute_cap",
             "--format=csv,noheader,nounits",
         ])
@@ -126,7 +126,7 @@ pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
 /// Detect AMD GPU using rocm-smi
 fn detect_amd_gpu() -> Option<GpuInfo> {
     let output = Command::new("rocm-smi")
-        .args(&["--showproductname", "--showmeminfo", "vram"])
+        .args(["--showproductname", "--showmeminfo", "vram"])
         .output()
         .ok()?;
 

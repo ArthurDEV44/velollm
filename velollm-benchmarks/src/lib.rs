@@ -117,7 +117,7 @@ impl BenchmarkRunner {
             };
 
             let response = client
-                .post(&format!("{}/api/generate", self.ollama_url))
+                .post(format!("{}/api/generate", self.ollama_url))
                 .json(&request)
                 .send()
                 .await
@@ -212,7 +212,7 @@ impl BenchmarkRunner {
     pub async fn check_ollama_available(&self) -> anyhow::Result<bool> {
         let client = reqwest::Client::new();
         let response = client
-            .get(&format!("{}/api/tags", self.ollama_url))
+            .get(format!("{}/api/tags", self.ollama_url))
             .send()
             .await;
 
