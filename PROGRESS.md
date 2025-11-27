@@ -136,19 +136,22 @@ VeloLLM est en développement actif. Les fondations techniques sont en place ave
 - **Build**: Successful (debug & release) ✅
 
 ### Performance
-- **Benchmark Results** (test sur my-hardware.json):
-  - Hardware détecté: CPU-only Linux system
-  - Benchmarks exécutés: ✅ (voir my-baseline.json)
-  - Speedup vs baseline: N/A (pas encore d'optimizations appliquées)
+- **Benchmark Results** (RTX 4070 Ti SUPER + Ryzen 7800X3D):
+  - Hardware détecté: ✅ NVIDIA RTX 4070 Ti SUPER 16GB + AMD Ryzen 7800X3D
+  - Benchmarks exécutés: ✅ llama3.2:3b (voir my-baseline.json)
+  - **Baseline Performance**: **137 tok/s average** (65.6 → 175.4 tok/s)
+  - TTFT: **~20ms** (excellent)
+  - Speedup vs baseline: N/A (baseline établi, optimizations à venir)
+  - **Target avec optimisations**: 270-480 tok/s (2-3.5x speedup)
 
 ### Documentation
-- **Core Docs**: 5/7 documents créés
+- **Core Docs**: 6/7 documents créés
   - ✅ README.md (overview, quick start)
   - ✅ CLAUDE.md (guide pour Claude Code)
   - ✅ DEVELOPMENT.md (build, test, workflow)
   - ✅ TESTING.md (test instructions)
   - ✅ PROGRESS.md (ce fichier)
-  - ⏳ BENCHMARKS.md (manque résultats réels)
+  - ✅ BENCHMARKS.md (résultats baseline RTX 4070 Ti SUPER)
   - ⏳ ARCHITECTURE.md (design decisions)
 
 ---
@@ -190,8 +193,11 @@ ef295cf feat: initialize VeloLLM repository
 - ✅ Completed TASK-003: Hardware detection multi-plateforme
 - ✅ Completed TASK-002: Build system avec Cargo workspace
 - ✅ Completed TASK-001: Repository initialization
+- 📊 **Baseline établi**: 137 tok/s average sur RTX 4070 Ti SUPER (llama3.2:3b)
+- 📄 Créé BENCHMARKS.md avec résultats détaillés et analyse
 - 📄 Créé CLAUDE.md pour guidance Claude Code
 - 📄 Mis à jour TODO.md et ROADMAP.md avec progression
+- ✅ **Option A validée**: Hardware + benchmarks documentés
 
 ---
 

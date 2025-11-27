@@ -1,0 +1,50 @@
+[
+  {
+    "config": {
+      "name": "short_completion",
+      "model": "llama3.2:3b",
+      "prompt": "Write a hello world program in Python",
+      "max_tokens": 50,
+      "iterations": 5
+    },
+    "tokens_per_second": 65.63402467839327,
+    "time_to_first_token_ms": 15.978979524000001,
+    "total_time_ms": 3809.0,
+    "total_tokens": 250,
+    "prompt_eval_count": 32,
+    "eval_count": 50,
+    "timestamp": "2025-11-26T23:02:40.338600359+00:00"
+  },
+  {
+    "config": {
+      "name": "medium_completion",
+      "model": "llama3.2:3b",
+      "prompt": "Explain how neural networks learn through backpropagation in detail",
+      "max_tokens": 150,
+      "iterations": 3
+    },
+    "tokens_per_second": 170.45454545454544,
+    "time_to_first_token_ms": 21.824816015555555,
+    "total_time_ms": 2640.0,
+    "total_tokens": 450,
+    "prompt_eval_count": 37,
+    "eval_count": 150,
+    "timestamp": "2025-11-26T23:02:43.006027110+00:00"
+  },
+  {
+    "config": {
+      "name": "code_generation",
+      "model": "llama3.2:3b",
+      "prompt": "Write a Rust function to compute the Fibonacci sequence using dynamic programming",
+      "max_tokens": 200,
+      "iterations": 3
+    },
+    "tokens_per_second": 175.43859649122808,
+    "time_to_first_token_ms": 21.716025004999995,
+    "total_time_ms": 3420.0,
+    "total_tokens": 600,
+    "prompt_eval_count": 37,
+    "eval_count": 200,
+    "timestamp": "2025-11-26T23:02:46.452816053+00:00"
+  }
+]
