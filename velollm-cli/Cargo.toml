@@ -13,9 +13,11 @@ path = "src/main.rs"
 [dependencies]
 velollm-core = { path = "../velollm-core" }
 velollm-benchmarks = { path = "../velollm-benchmarks" }
+velollm-adapters-ollama = { path = "../adapters/ollama" }
 
 clap = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
+chrono = { workspace = true }

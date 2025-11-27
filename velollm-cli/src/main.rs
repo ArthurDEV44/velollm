@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
 use velollm_core::hardware::HardwareSpec;
+use velollm_core::optimizer::{OllamaOptimizer, OptimizedConfig};
 use velollm_benchmarks::{BenchmarkRunner, get_standard_benchmarks};
+use velollm_adapters_ollama::OllamaConfig;
 
 #[derive(Parser)]
 #[command(name = "velollm")]
@@ -166,16 +168,154 @@ async fn main() -> anyhow::Result<()> {
         }
 
         Commands::Optimize { dry_run, output } => {
-            println!("Optimize command");
+            println!("⚡ VeloLLM Ollama Optimizer\n");
+
+            // Step 1: Detect hardware
+            println!("🔍 Detecting hardware configuration...");
+            let hw = HardwareSpec::detect()?;
+
+            println!("✓ Hardware detected:");
+            if let Some(ref gpu) = hw.gpu {
+                println!("  GPU: {} ({:.1} GB VRAM)", gpu.name, gpu.vram_total_mb as f64 / 1024.0);
+            } else {
+                println!("  GPU: None (CPU-only mode)");
+            }
+            println!("  CPU: {} cores / {} threads", hw.cpu.cores, hw.cpu.threads);
+            println!("  RAM: {:.1} GB\n", hw.memory.total_mb as f64 / 1024.0);
+
+            // Step 2: Read current configuration from environment
+            println!("📊 Reading current Ollama configuration from environment...");
+            let current_env = OllamaConfig::from_env();
+
+            if current_env.is_empty() {
+                println!("  No Ollama environment variables currently set (using defaults)");
+            } else {
+                println!("  Current configuration:");
+                if let Some(val) = current_env.num_parallel {
+                    println!("    OLLAMA_NUM_PARALLEL: {}", val);
+                }
+                if let Some(val) = current_env.num_gpu {
+                    println!("    OLLAMA_NUM_GPU: {}", val);
+                }
+                if let Some(val) = current_env.num_batch {
+                    println!("    OLLAMA_NUM_BATCH: {}", val);
+                }
+                if let Some(val) = current_env.num_ctx {
+                    println!("    OLLAMA_NUM_CTX: {}", val);
+                }
+            }
+            println!();
+
+            // Step 3: Generate optimized configuration
+            println!("⚙️  Generating optimized configuration for your hardware...");
+            let optimized = OllamaOptimizer::optimize(&hw);
+
+            // Convert OptimizedConfig to OllamaConfig for comparison and export
+            let optimized_ollama = optimized_config_to_ollama(&optimized);
+
+            // Convert current env to OptimizedConfig format for comparison
+            let current_optimized = ollama_to_optimized_config(&current_env);
+
+            // Step 4: Generate comparison report
+            let report = OllamaOptimizer::generate_report(&current_optimized, &optimized);
+            println!("\n{}", report);
+
+            // Step 5: Show recommended configuration
+            println!("📝 Recommended Ollama configuration:\n");
+            println!("  OLLAMA_NUM_PARALLEL: {} (concurrent requests)", optimized.num_parallel);
+            println!("  OLLAMA_NUM_GPU: {} (GPU layers to offload)", optimized.num_gpu);
+            println!("  OLLAMA_NUM_BATCH: {} (batch size for prompt processing)", optimized.num_batch);
+            println!("  OLLAMA_NUM_CTX: {} (context window size)", optimized.num_ctx);
+            println!("  OLLAMA_MAX_LOADED_MODELS: {} (models to keep in memory)", optimized.max_loaded_models);
+            println!("  OLLAMA_KEEP_ALIVE: \"{}\" (model retention time)", optimized.keep_alive);
+            if let Some(threads) = optimized.num_thread {
+                println!("  OLLAMA_NUM_THREAD: {} (CPU threads)", threads);
+            }
+            println!();
+
             if dry_run {
-                println!("Dry run mode enabled");
+                println!("🔬 Dry run mode - no files created");
+                println!("\n💡 To apply these settings, run without --dry-run:");
+                println!("   velollm optimize -o velollm-config.sh");
+                println!("   source velollm-config.sh");
+                return Ok(());
             }
+
+            // Step 6: Generate shell script
+            let script = generate_shell_script(&optimized_ollama);
+
             if let Some(path) = output {
-                println!("Output will be saved to: {}", path);
+                std::fs::write(&path, &script)?;
+                println!("✅ Configuration saved to: {}", path);
+                println!("\n📌 To apply these settings:");
+                println!("   source {}", path);
+                println!("\n💡 Add to your shell profile for persistence:");
+                println!("   echo 'source {}' >> ~/.bashrc", std::fs::canonicalize(&path)?.display());
+            } else {
+                println!("📝 Shell configuration:\n");
+                println!("{}", script);
+                println!("\n💡 To save to a file, use:");
+                println!("   velollm optimize -o velollm-config.sh");
             }
-            println!("TODO: Implement in TASK-009");
         }
     }
 
     Ok(())
+}
+
+/// Convert OptimizedConfig to OllamaConfig for shell export
+fn optimized_config_to_ollama(optimized: &OptimizedConfig) -> OllamaConfig {
+    OllamaConfig {
+        num_parallel: Some(optimized.num_parallel),
+        max_loaded_models: Some(optimized.max_loaded_models),
+        keep_alive: Some(optimized.keep_alive.clone()),
+        num_ctx: Some(optimized.num_ctx),
+        num_batch: Some(optimized.num_batch),
+        num_gpu: Some(optimized.num_gpu),
+        num_thread: optimized.num_thread,
+        ollama_host: None,
+        ollama_models: None,
+        ollama_debug: None,
+        ollama_flash_attention: None,
+        ollama_num_gpu: Some(optimized.num_gpu),
+    }
+}
+
+/// Convert OllamaConfig to OptimizedConfig for comparison
+fn ollama_to_optimized_config(ollama: &OllamaConfig) -> OptimizedConfig {
+    OptimizedConfig {
+        num_parallel: ollama.num_parallel.unwrap_or(1),
+        max_loaded_models: ollama.max_loaded_models.unwrap_or(1),
+        keep_alive: ollama.keep_alive.clone().unwrap_or_else(|| "5m".to_string()),
+        num_ctx: ollama.num_ctx.unwrap_or(2048),
+        num_batch: ollama.num_batch.unwrap_or(512),
+        num_gpu: ollama.num_gpu.unwrap_or(-1),
+        num_thread: ollama.num_thread,
+    }
+}
+
+/// Generate shell script with proper header and exports
+fn generate_shell_script(config: &OllamaConfig) -> String {
+    let timestamp = chrono::Utc::now().to_rfc3339();
+    let mut script = String::new();
+
+    script.push_str("#!/bin/bash\n");
+    script.push_str("#\n");
+    script.push_str("# VeloLLM - Optimized Ollama Configuration\n");
+    script.push_str(&format!("# Generated: {}\n", timestamp));
+    script.push_str("#\n");
+    script.push_str("# This script sets environment variables to optimize Ollama performance\n");
+    script.push_str("# for your specific hardware configuration.\n");
+    script.push_str("#\n");
+    script.push_str("# Usage:\n");
+    script.push_str("#   source velollm-config.sh\n");
+    script.push_str("#\n");
+    script.push_str("# To make permanent, add to your shell profile:\n");
+    script.push_str("#   echo 'source /path/to/velollm-config.sh' >> ~/.bashrc\n");
+    script.push_str("#\n\n");
+
+    script.push_str(&config.to_env_exports());
+    script.push('\n');
+
+    script
 }
