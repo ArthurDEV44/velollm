@@ -1726,13 +1726,13 @@ Chaque tâche suit ce template:
 - [x] TASK-005: Speculative analysis ✅ (commit: bb958d7)
 - [x] TASK-006: Speculative wrapper ✅ (commit: 4099af9)
 - [x] TASK-007: Benchmark comparison ✅ (commit: 18a8789)
-- [x] TASK-008: Config parser ✅ (adapters/ollama)
-- [ ] TASK-009: Optimizer (en cours - structure CLI existe)
+- [x] TASK-008: Config parser ✅ (commit: 77e2204)
+- [x] TASK-009: Optimizer ✅ (velollm-core/optimizer)
 - [ ] TASK-010: CLI optimize command (stub implémenté)
 - [ ] TASK-011: Integration tests
 - [ ] TASK-012: Documentation (README.md, BENCHMARKS.md faits)
 
-**Progress**: 8/12 tasks (67%) ✅ → 🚧 TASK-009 next
+**Progress**: 9/12 tasks (75%) ✅ → 🚧 TASK-010 next
 
 **Completed Tasks Details**:
 - ✅ TASK-001: Repository structure créée avec workspace Cargo
@@ -1743,9 +1743,10 @@ Chaque tâche suit ce template:
 - ✅ TASK-006: llama.cpp wrapper (SpeculativeRunner, metrics parsing, vanilla/speculative modes)
 - ✅ TASK-007: Benchmark comparison (statistical analysis, mean/stddev, speedup ± error, JSON export)
 - ✅ TASK-008: Ollama config parser (from_env, to_env_exports, merge, JSON serialization)
+- ✅ TASK-009: Hardware-based optimizer (GPU/CPU/memory heuristics, generate_report, 5 unit tests)
 
 **Tests Status**:
-- velollm-core: 8/8 tests passing ✅
+- velollm-core: 13/13 tests passing ✅ (+5 optimizer tests)
 - velollm-benchmarks: 3/3 tests passing ✅
 - velollm-adapters-llamacpp: 6/6 tests passing ✅
 - velollm-adapters-ollama: 6/6 tests passing ✅
