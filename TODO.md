@@ -1727,12 +1727,12 @@ Chaque tâche suit ce template:
 - [x] TASK-006: Speculative wrapper ✅ (commit: 4099af9)
 - [x] TASK-007: Benchmark comparison ✅ (commit: 18a8789)
 - [x] TASK-008: Config parser ✅ (commit: 77e2204)
-- [x] TASK-009: Optimizer ✅ (velollm-core/optimizer)
-- [ ] TASK-010: CLI optimize command (stub implémenté)
+- [x] TASK-009: Optimizer ✅ (commit: ae1c782)
+- [x] TASK-010: CLI optimize command ✅ (commit: 6369098)
 - [ ] TASK-011: Integration tests
 - [ ] TASK-012: Documentation (README.md, BENCHMARKS.md faits)
 
-**Progress**: 9/12 tasks (75%) ✅ → 🚧 TASK-010 next
+**Progress**: 10/12 tasks (83%) ✅ → 🚧 TASK-011 next
 
 **Completed Tasks Details**:
 - ✅ TASK-001: Repository structure créée avec workspace Cargo
@@ -1744,6 +1744,7 @@ Chaque tâche suit ce template:
 - ✅ TASK-007: Benchmark comparison (statistical analysis, mean/stddev, speedup ± error, JSON export)
 - ✅ TASK-008: Ollama config parser (from_env, to_env_exports, merge, JSON serialization)
 - ✅ TASK-009: Hardware-based optimizer (GPU/CPU/memory heuristics, generate_report, 5 unit tests)
+- ✅ TASK-010: CLI optimize command (velollm optimize --dry-run/-o, hardware detection, config comparison, shell script generation)
 
 **Tests Status**:
 - velollm-core: 13/13 tests passing ✅ (+5 optimizer tests)

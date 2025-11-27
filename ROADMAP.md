@@ -8,7 +8,7 @@ VeloLLM est un **autopilot pour l'inférence locale d'IA**, visant à combler l'
 
 ---
 
-## Phase 1: MVP - Fondations & Validation (Mois 1-3) 🚧 33% COMPLETE
+## Phase 1: MVP - Fondations & Validation (Mois 1-3) 🚧 83% COMPLETE
 
 ### Objectifs Clés
 - Valider la faisabilité technique des optimisations principales
@@ -50,30 +50,34 @@ VeloLLM est un **autopilot pour l'inférence locale d'IA**, visant à combler l'
 - [ ] Base de données de configurations optimales par hardware
   - Format JSON: `{gpu_model: {vram: X, optimal_batch: Y, ...}}`
 
-#### 1.2 Wrapper Ollama Intelligent (Semaines 3-6) 🚧 EN COURS
+#### 1.2 Wrapper Ollama Intelligent (Semaines 3-6) ✅ COMPLETE
 
 **Objectif**: Tool qui optimise automatiquement Ollama sans modification
 
-##### Auto-Configuration Engine
-- [ ] Scanner les paramètres Ollama actuels
-  - Lire `~/.ollama/config.json` ou équivalent
-  - Parser `ollama ps` pour les modèles chargés
-- [ ] Appliquer les configurations optimales
-  - `OLLAMA_NUM_PARALLEL`: basé sur VRAM disponible
-  - `OLLAMA_MAX_LOADED_MODELS`: mémoire management
-  - `OLLAMA_KEEP_ALIVE`: stratégie de warming intelligente
-  - Context window optimization: `num_ctx` basé sur use-case
-- [ ] Mode dry-run pour preview des changements
-  - Afficher: paramètres actuels → recommandés → gain estimé
+##### Auto-Configuration Engine ✅ COMPLETE
+- [x] Scanner les paramètres Ollama actuels
+  - Lecture des variables d'environnement OLLAMA_* ✅
+  - OllamaConfig::from_env() implémenté ✅
+- [x] Appliquer les configurations optimales
+  - `OLLAMA_NUM_PARALLEL`: basé sur VRAM disponible ✅
+  - `OLLAMA_MAX_LOADED_MODELS`: mémoire management ✅
+  - `OLLAMA_KEEP_ALIVE`: stratégie de warming intelligente ✅
+  - `OLLAMA_NUM_CTX`: context window basé sur VRAM ✅
+  - `OLLAMA_NUM_BATCH`: batch size optimisé ✅
+  - `OLLAMA_NUM_GPU`: layers GPU offloading ✅
+  - `OLLAMA_NUM_THREAD`: CPU threads (CPU-only mode) ✅
+- [x] Mode dry-run pour preview des changements ✅
+  - Affichage: paramètres actuels → recommandés → gain estimé ✅
+  - Comparaison détaillée avec explications ✅
 
-##### CLI de Base ✅ STRUCTURE COMPLETE
+##### CLI de Base ✅ COMPLETE
 ```bash
 # Installation
 cargo install velollm  ✅ Build system ready
 
 # Commandes essentielles
 velollm detect              # ✅ Implémenté (affiche hardware JSON)
-velollm optimize            # 🚧 Stub créé (TODO: TASK-009)
+velollm optimize            # ✅ Implémenté (--dry-run, -o output.sh)
 velollm benchmark           # ✅ Implémenté (Ollama benchmarks)
 ```
 
