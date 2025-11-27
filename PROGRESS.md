@@ -2,7 +2,7 @@
 
 **Last Updated**: 2025-11-27
 **Phase**: Phase 1 MVP - Fondations & Validation
-**Overall Progress**: 33% (4/12 tasks completed)
+**Overall Progress**: 42% (5/12 tasks completed)
 
 ---
 
@@ -19,7 +19,7 @@ VeloLLM est en développement actif. Les fondations techniques sont en place ave
 
 ---
 
-## ✅ Completed Tasks (4/12)
+## ✅ Completed Tasks (5/12)
 
 ### TASK-001: Repository Setup ✅
 - **Commit**: ef295cf
@@ -82,6 +82,24 @@ VeloLLM est en développement actif. Les fondations techniques sont en place ave
   # Exécute 3 benchmarks et sauvegarde les résultats
   ```
 
+### TASK-005: Speculative Decoding Analysis ✅
+- **Commit**: bb958d7
+- **Status**: Complete
+- **Estimated**: 2h | **Actual**: 2h ✅
+- **Details**:
+  - Analysé llama.cpp implementation (common/speculative.{h,cpp})
+  - Identifié paramètres optimaux: n_draft=16, p_min=0.75, n_reuse=256
+  - Documenté stratégie de sampling: top-k=10 pour draft model
+  - Déterminé exigences de compatibilité vocabulaire
+  - Identifié paires de modèles optimales pour speedup 1.5-2.5x
+- **Key Findings**:
+  - **llama3.2:3b + llama3.2:1b**: 1.8-2.2x speedup (recommandé pour notre baseline)
+  - **Acceptance rate target**: 70-75%
+  - **Expected result**: 137 tok/s → 270-300 tok/s
+- **Files**:
+  - `docs/research/speculative_decoding.md` (357 lignes)
+- **Next**: TASK-006 - Implement Rust wrapper
+
 ---
 
 ## 🚧 In Progress
@@ -101,15 +119,14 @@ VeloLLM est en développement actif. Les fondations techniques sont en place ave
 
 ## ⏳ Next Tasks
 
-### TASK-005: Speculative Decoding Analysis (HIGH PRIORITY)
-- **Priority**: P0 (Blocking pour validation technique)
-- **Estimated**: 2h
-- **Description**: Analyser l'implémentation de speculative decoding dans llama.cpp
-- **Actions**:
-  1. Explorer `/home/sauron/code/llama.cpp/common/speculative.*`
-  2. Documenter les paramètres configurables
-  3. Identifier les paires optimales (main, draft)
-  4. Créer `docs/research/speculative_decoding.md`
+### TASK-005: Speculative Decoding Analysis ✅ COMPLETE
+- **Status**: ✅ Complete (commit: bb958d7)
+- **Time**: 2h (as estimated)
+- **Key Deliverables**:
+  - Comprehensive analysis document (357 lines)
+  - Optimal parameters identified
+  - Model pairs documented
+  - Expected speedup: 2.0-2.2x for our hardware
 
 ### TASK-006: Speculative Wrapper
 - **Priority**: P0
@@ -189,11 +206,14 @@ ef295cf feat: initialize VeloLLM repository
 ## 🔄 Changelog
 
 ### 2025-11-27
+- ✅ Completed TASK-005: Speculative decoding analysis (2h)
 - ✅ Completed TASK-004: Benchmark suite avec 3 benchmarks standard
 - ✅ Completed TASK-003: Hardware detection multi-plateforme
 - ✅ Completed TASK-002: Build system avec Cargo workspace
 - ✅ Completed TASK-001: Repository initialization
 - 📊 **Baseline établi**: 137 tok/s average sur RTX 4070 Ti SUPER (llama3.2:3b)
+- 🎯 **Speculative strategy**: llama3.2:3b + 1b → 270-300 tok/s target (2.0-2.2x)
+- 📄 Créé docs/research/speculative_decoding.md (357 lignes)
 - 📄 Créé BENCHMARKS.md avec résultats détaillés et analyse
 - 📄 Créé CLAUDE.md pour guidance Claude Code
 - 📄 Mis à jour TODO.md et ROADMAP.md avec progression

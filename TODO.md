@@ -1723,22 +1723,23 @@ Chaque tâche suit ce template:
 - [x] TASK-002: Build system ✅ (commit: 7ab3d10)
 - [x] TASK-003: Hardware detection ✅ (commit: eabd378, 8a7b193)
 - [x] TASK-004: Benchmark suite ✅ (commit: 8d849e6)
-- [ ] TASK-005: Speculative analysis
+- [x] TASK-005: Speculative analysis ✅ (commit: bb958d7)
 - [ ] TASK-006: Speculative wrapper
 - [ ] TASK-007: Benchmark comparison
 - [ ] TASK-008: Config parser
 - [ ] TASK-009: Optimizer (en cours - structure CLI existe)
 - [ ] TASK-010: CLI optimize command (stub implémenté)
 - [ ] TASK-011: Integration tests
-- [ ] TASK-012: Documentation (README.md fait, manque BENCHMARKS.md)
+- [ ] TASK-012: Documentation (README.md, BENCHMARKS.md faits)
 
-**Progress**: 4/12 tasks (33%) ✅ → 🚧 TASK-005 next
+**Progress**: 5/12 tasks (42%) ✅ → 🚧 TASK-006 next
 
 **Completed Tasks Details**:
 - ✅ TASK-001: Repository structure créée avec workspace Cargo
 - ✅ TASK-002: Cargo workspace avec 3 crates (core, cli, benchmarks), CI configuré
 - ✅ TASK-003: Hardware detection complet (NVIDIA, AMD, Apple, Intel GPU + CPU + Memory)
 - ✅ TASK-004: Benchmark suite Ollama avec standard benchmarks, résultats JSON
+- ✅ TASK-005: Speculative decoding analysis (optimal params, model pairs, 2x speedup strategy)
 
 **Tests Status**:
 - velollm-core: 8/8 tests passing ✅
