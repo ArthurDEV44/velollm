@@ -1,0 +1,16 @@
+[package]
+name = "velollm-bench-speculative"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+velollm-adapters-llamacpp = { path = "../../adapters/llamacpp" }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+chrono.workspace = true

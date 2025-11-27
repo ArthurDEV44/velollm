@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "velollm-core",
     "velollm-cli",
-    "velollm-benchmarks", "adapters/llamacpp",
+    "velollm-benchmarks", "adapters/llamacpp", "benchmarks/speculative",
 ]
 
 [workspace.package]
