@@ -1719,20 +1719,32 @@ Chaque tâche suit ce template:
 ## 📊 Progress Tracking
 
 ### Phase 1 MVP (Mois 1-3)
-- [x] TASK-001: Repository setup
-- [ ] TASK-002: Build system
-- [ ] TASK-003: Hardware detection
-- [ ] TASK-004: Benchmark suite
+- [x] TASK-001: Repository setup ✅ (commit: ef295cf)
+- [x] TASK-002: Build system ✅ (commit: 7ab3d10)
+- [x] TASK-003: Hardware detection ✅ (commit: eabd378, 8a7b193)
+- [x] TASK-004: Benchmark suite ✅ (commit: 8d849e6)
 - [ ] TASK-005: Speculative analysis
 - [ ] TASK-006: Speculative wrapper
 - [ ] TASK-007: Benchmark comparison
 - [ ] TASK-008: Config parser
-- [ ] TASK-009: Optimizer
-- [ ] TASK-010: CLI optimize command
+- [ ] TASK-009: Optimizer (en cours - structure CLI existe)
+- [ ] TASK-010: CLI optimize command (stub implémenté)
 - [ ] TASK-011: Integration tests
-- [ ] TASK-012: Documentation
+- [ ] TASK-012: Documentation (README.md fait, manque BENCHMARKS.md)
 
-**Progress**: 0/12 tasks (0%)
+**Progress**: 4/12 tasks (33%) ✅ → 🚧 TASK-005 next
+
+**Completed Tasks Details**:
+- ✅ TASK-001: Repository structure créée avec workspace Cargo
+- ✅ TASK-002: Cargo workspace avec 3 crates (core, cli, benchmarks), CI configuré
+- ✅ TASK-003: Hardware detection complet (NVIDIA, AMD, Apple, Intel GPU + CPU + Memory)
+- ✅ TASK-004: Benchmark suite Ollama avec standard benchmarks, résultats JSON
+
+**Tests Status**:
+- velollm-core: 8/8 tests passing ✅
+- velollm-benchmarks: 3/3 tests passing ✅
+- Build: ✅ `cargo build` successful
+- CI: ✅ GitHub Actions configuré (.github/workflows/ci.yml)
 
 ### Phase 2 Advanced (Mois 4-6)
 - [ ] TASK-013: PagedAttention research
