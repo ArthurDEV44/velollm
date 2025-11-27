@@ -1724,7 +1724,7 @@ Chaque tâche suit ce template:
 - [x] TASK-003: Hardware detection ✅ (commit: eabd378, 8a7b193)
 - [x] TASK-004: Benchmark suite ✅ (commit: 8d849e6)
 - [x] TASK-005: Speculative analysis ✅ (commit: bb958d7)
-- [ ] TASK-006: Speculative wrapper
+- [x] TASK-006: Speculative wrapper ✅ (adapters/llamacpp)
 - [ ] TASK-007: Benchmark comparison
 - [ ] TASK-008: Config parser
 - [ ] TASK-009: Optimizer (en cours - structure CLI existe)
@@ -1732,7 +1732,7 @@ Chaque tâche suit ce template:
 - [ ] TASK-011: Integration tests
 - [ ] TASK-012: Documentation (README.md, BENCHMARKS.md faits)
 
-**Progress**: 5/12 tasks (42%) ✅ → 🚧 TASK-006 next
+**Progress**: 6/12 tasks (50%) ✅ → 🚧 TASK-007 next
 
 **Completed Tasks Details**:
 - ✅ TASK-001: Repository structure créée avec workspace Cargo
@@ -1740,11 +1740,14 @@ Chaque tâche suit ce template:
 - ✅ TASK-003: Hardware detection complet (NVIDIA, AMD, Apple, Intel GPU + CPU + Memory)
 - ✅ TASK-004: Benchmark suite Ollama avec standard benchmarks, résultats JSON
 - ✅ TASK-005: Speculative decoding analysis (optimal params, model pairs, 2x speedup strategy)
+- ✅ TASK-006: llama.cpp wrapper (SpeculativeRunner, metrics parsing, vanilla/speculative modes)
 
 **Tests Status**:
 - velollm-core: 8/8 tests passing ✅
 - velollm-benchmarks: 3/3 tests passing ✅
-- Build: ✅ `cargo build` successful
+- velollm-adapters-llamacpp: 6/6 tests passing ✅
+- Build: ✅ `cargo build --all` successful
+- Clippy: ✅ No warnings
 - CI: ✅ GitHub Actions configuré (.github/workflows/ci.yml)
 
 ### Phase 2 Advanced (Mois 4-6)
