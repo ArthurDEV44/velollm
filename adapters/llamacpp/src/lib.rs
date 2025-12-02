@@ -4,6 +4,8 @@ use std::process::{Command, Stdio};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+pub mod kv_cache;
+
 /// Configuration for speculative decoding with llama.cpp
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpeculativeConfig {

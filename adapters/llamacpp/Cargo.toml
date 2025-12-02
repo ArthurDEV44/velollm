@@ -11,6 +11,8 @@ homepage.workspace = true
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+velollm-core = { path = "../../velollm-core" }
+thiserror.workspace = true
 
 [[example]]
 name = "speculative_comparison"

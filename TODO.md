@@ -71,12 +71,22 @@ Features:
 
 ---
 
-#### TASK-015: llama.cpp Paged KV Cache Integration
+#### TASK-015: llama.cpp Paged KV Cache Integration ✅
 **Priority**: P1
 **Estimated effort**: 12h
 **Dependencies**: TASK-014
 
-**Instructions**:
+**Completed**: Module `adapters/llamacpp/src/kv_cache.rs`
+
+Features implemented:
+- `PagedKvCache` wrapper around BlockManager with llama.cpp-compatible API
+- llama_memory_* compatible functions: `clear`, `seq_rm`, `seq_cp`, `seq_keep`, `seq_add`, `seq_div`
+- Position tracking: `seq_pos_min`, `seq_pos_max`
+- Sequence ID mapping (llama_seq_id i32 ↔ internal u64)
+- Statistics and memory utilization tracking
+- 14 unit tests + 1 doc test
+
+**Original Instructions** (for reference):
 
 1. **Étudier l'architecture KV cache de llama.cpp**:
    ```bash
@@ -431,24 +441,24 @@ Voir [TODO_MVP.md](TODO_MVP.md) pour les détails.
 ### Phase 2 Advanced (Mois 4-6)
 - [x] TASK-013: PagedAttention research ✅
 - [x] TASK-014: Block manager ✅
-- [ ] TASK-015: llama.cpp paged KV cache integration
+- [x] TASK-015: llama.cpp paged KV cache integration ✅
 - [ ] TASK-016: CUDA paged attention kernel
 - [ ] TASK-017: Continuous batching scheduler
 - [ ] TASK-018: LocalAI adapter
 - [ ] TASK-019: vLLM adapter
 - [ ] TASK-020: Performance profiler
 
-**Progress**: 2/8 tasks (25%)
+**Progress**: 3/8 tasks (37.5%)
 
 **Tests Status**:
-- velollm-core: 48/48 tests passing ✅ (+35 paged_attention tests)
+- velollm-core: 48/48 tests passing ✅
 - velollm-benchmarks: 3/3 tests passing ✅
-- velollm-adapters-llamacpp: 6/6 tests passing ✅
+- velollm-adapters-llamacpp: 21/21 tests passing ✅ (+14 kv_cache tests)
 - velollm-adapters-ollama: 6/6 tests passing ✅
 - velollm-cli: 8/8 integration tests passing ✅
-- Doc tests: 4/4 passing ✅
+- Doc tests: 5/5 passing ✅
 
-**Total: 75 tests passing**
+**Total: 91 tests passing**
 
 ---
 
@@ -509,4 +519,4 @@ cargo doc --open
 
 ---
 
-**Next task: TASK-015 (llama.cpp Paged KV Cache Integration) 🚀**
+**Next task: TASK-016 (CUDA Paged Attention Kernel) 🚀**
