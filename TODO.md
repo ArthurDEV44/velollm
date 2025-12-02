@@ -1730,9 +1730,9 @@ Chaque tâche suit ce template:
 - [x] TASK-009: Optimizer ✅ (commit: ae1c782)
 - [x] TASK-010: CLI optimize command ✅ (commit: 6369098)
 - [x] TASK-011: Integration tests ✅
-- [ ] TASK-012: Documentation (README.md, BENCHMARKS.md faits)
+- [x] TASK-012: Documentation ✅
 
-**Progress**: 11/12 tasks (92%) ✅ → 🚧 TASK-012 next
+**Progress**: 12/12 tasks (100%) ✅ → Phase 1 MVP COMPLETE!
 
 **Completed Tasks Details**:
 - ✅ TASK-001: Repository structure créée avec workspace Cargo
@@ -1746,6 +1746,7 @@ Chaque tâche suit ce template:
 - ✅ TASK-009: Hardware-based optimizer (GPU/CPU/memory heuristics, generate_report, 5 unit tests)
 - ✅ TASK-010: CLI optimize command (velollm optimize --dry-run/-o, hardware detection, config comparison, shell script generation)
 - ✅ TASK-011: End-to-end integration tests (8 tests: detect, optimize, help, version, JSON validation, benchmark error handling)
+- ✅ TASK-012: Documentation (CONFIG_GUIDE.md, ARCHITECTURE.md, README.md status update)
 
 **Tests Status**:
 - velollm-core: 13/13 tests passing ✅ (+5 optimizer tests)
