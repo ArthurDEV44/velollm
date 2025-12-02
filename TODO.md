@@ -1729,10 +1729,10 @@ Chaque tâche suit ce template:
 - [x] TASK-008: Config parser ✅ (commit: 77e2204)
 - [x] TASK-009: Optimizer ✅ (commit: ae1c782)
 - [x] TASK-010: CLI optimize command ✅ (commit: 6369098)
-- [ ] TASK-011: Integration tests
+- [x] TASK-011: Integration tests ✅
 - [ ] TASK-012: Documentation (README.md, BENCHMARKS.md faits)
 
-**Progress**: 10/12 tasks (83%) ✅ → 🚧 TASK-011 next
+**Progress**: 11/12 tasks (92%) ✅ → 🚧 TASK-012 next
 
 **Completed Tasks Details**:
 - ✅ TASK-001: Repository structure créée avec workspace Cargo
@@ -1745,16 +1745,21 @@ Chaque tâche suit ce template:
 - ✅ TASK-008: Ollama config parser (from_env, to_env_exports, merge, JSON serialization)
 - ✅ TASK-009: Hardware-based optimizer (GPU/CPU/memory heuristics, generate_report, 5 unit tests)
 - ✅ TASK-010: CLI optimize command (velollm optimize --dry-run/-o, hardware detection, config comparison, shell script generation)
+- ✅ TASK-011: End-to-end integration tests (8 tests: detect, optimize, help, version, JSON validation, benchmark error handling)
 
 **Tests Status**:
 - velollm-core: 13/13 tests passing ✅ (+5 optimizer tests)
 - velollm-benchmarks: 3/3 tests passing ✅
 - velollm-adapters-llamacpp: 6/6 tests passing ✅
 - velollm-adapters-ollama: 6/6 tests passing ✅
+- velollm-cli: 8/8 integration tests passing ✅ (NEW)
 - velollm-bench-speculative: CLI binary ✅
+- Doc tests: 3/3 passing ✅
 - Build: ✅ `cargo build --all` successful
 - Clippy: ✅ No warnings
 - CI: ✅ GitHub Actions configuré (.github/workflows/ci.yml)
+
+**Total: 39 tests passing**
 
 ### Phase 2 Advanced (Mois 4-6)
 - [ ] TASK-013: PagedAttention research
