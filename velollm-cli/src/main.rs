@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
+use velollm_adapters_ollama::OllamaConfig;
+use velollm_benchmarks::{get_standard_benchmarks, BenchmarkRunner};
 use velollm_core::hardware::HardwareSpec;
 use velollm_core::optimizer::{OllamaOptimizer, OptimizedConfig};
-use velollm_benchmarks::{BenchmarkRunner, get_standard_benchmarks};
-use velollm_adapters_ollama::OllamaConfig;
 
 #[derive(Parser)]
 #[command(name = "velollm")]
@@ -71,17 +71,37 @@ async fn main() -> anyhow::Result<()> {
             println!();
 
             println!("=== Memory ===");
-            println!("Total: {} MB ({:.1} GB)", hw.memory.total_mb, hw.memory.total_mb as f64 / 1024.0);
-            println!("Available: {} MB ({:.1} GB)", hw.memory.available_mb, hw.memory.available_mb as f64 / 1024.0);
-            println!("Used: {} MB ({:.1} GB)", hw.memory.used_mb, hw.memory.used_mb as f64 / 1024.0);
+            println!(
+                "Total: {} MB ({:.1} GB)",
+                hw.memory.total_mb,
+                hw.memory.total_mb as f64 / 1024.0
+            );
+            println!(
+                "Available: {} MB ({:.1} GB)",
+                hw.memory.available_mb,
+                hw.memory.available_mb as f64 / 1024.0
+            );
+            println!(
+                "Used: {} MB ({:.1} GB)",
+                hw.memory.used_mb,
+                hw.memory.used_mb as f64 / 1024.0
+            );
             println!();
 
             if let Some(ref gpu) = hw.gpu {
                 println!("=== GPU ===");
                 println!("Name: {}", gpu.name);
                 println!("Vendor: {:?}", gpu.vendor);
-                println!("VRAM Total: {} MB ({:.1} GB)", gpu.vram_total_mb, gpu.vram_total_mb as f64 / 1024.0);
-                println!("VRAM Free: {} MB ({:.1} GB)", gpu.vram_free_mb, gpu.vram_free_mb as f64 / 1024.0);
+                println!(
+                    "VRAM Total: {} MB ({:.1} GB)",
+                    gpu.vram_total_mb,
+                    gpu.vram_total_mb as f64 / 1024.0
+                );
+                println!(
+                    "VRAM Free: {} MB ({:.1} GB)",
+                    gpu.vram_free_mb,
+                    gpu.vram_free_mb as f64 / 1024.0
+                );
                 if let Some(ref driver) = gpu.driver_version {
                     println!("Driver: {}", driver);
                 }
@@ -148,8 +168,13 @@ async fn main() -> anyhow::Result<()> {
 
             // Overall average
             if !results.is_empty() {
-                let avg_tps: f64 = results.iter().map(|r| r.tokens_per_second).sum::<f64>() / results.len() as f64;
-                let avg_ttft: f64 = results.iter().map(|r| r.time_to_first_token_ms).sum::<f64>() / results.len() as f64;
+                let avg_tps: f64 =
+                    results.iter().map(|r| r.tokens_per_second).sum::<f64>() / results.len() as f64;
+                let avg_ttft: f64 = results
+                    .iter()
+                    .map(|r| r.time_to_first_token_ms)
+                    .sum::<f64>()
+                    / results.len() as f64;
 
                 println!("Overall Average:");
                 println!("  Tokens/s: {:.1}", avg_tps);
@@ -224,9 +249,15 @@ async fn main() -> anyhow::Result<()> {
             println!("📝 Recommended Ollama configuration:\n");
             println!("  OLLAMA_NUM_PARALLEL: {} (concurrent requests)", optimized.num_parallel);
             println!("  OLLAMA_NUM_GPU: {} (GPU layers to offload)", optimized.num_gpu);
-            println!("  OLLAMA_NUM_BATCH: {} (batch size for prompt processing)", optimized.num_batch);
+            println!(
+                "  OLLAMA_NUM_BATCH: {} (batch size for prompt processing)",
+                optimized.num_batch
+            );
             println!("  OLLAMA_NUM_CTX: {} (context window size)", optimized.num_ctx);
-            println!("  OLLAMA_MAX_LOADED_MODELS: {} (models to keep in memory)", optimized.max_loaded_models);
+            println!(
+                "  OLLAMA_MAX_LOADED_MODELS: {} (models to keep in memory)",
+                optimized.max_loaded_models
+            );
             println!("  OLLAMA_KEEP_ALIVE: \"{}\" (model retention time)", optimized.keep_alive);
             if let Some(threads) = optimized.num_thread {
                 println!("  OLLAMA_NUM_THREAD: {} (CPU threads)", threads);
@@ -250,7 +281,10 @@ async fn main() -> anyhow::Result<()> {
                 println!("\n📌 To apply these settings:");
                 println!("   source {}", path);
                 println!("\n💡 Add to your shell profile for persistence:");
-                println!("   echo 'source {}' >> ~/.bashrc", std::fs::canonicalize(&path)?.display());
+                println!(
+                    "   echo 'source {}' >> ~/.bashrc",
+                    std::fs::canonicalize(&path)?.display()
+                );
             } else {
                 println!("📝 Shell configuration:\n");
                 println!("{}", script);
@@ -286,7 +320,10 @@ fn ollama_to_optimized_config(ollama: &OllamaConfig) -> OptimizedConfig {
     OptimizedConfig {
         num_parallel: ollama.num_parallel.unwrap_or(1),
         max_loaded_models: ollama.max_loaded_models.unwrap_or(1),
-        keep_alive: ollama.keep_alive.clone().unwrap_or_else(|| "5m".to_string()),
+        keep_alive: ollama
+            .keep_alive
+            .clone()
+            .unwrap_or_else(|| "5m".to_string()),
         num_ctx: ollama.num_ctx.unwrap_or(2048),
         num_batch: ollama.num_batch.unwrap_or(512),
         num_gpu: ollama.num_gpu.unwrap_or(-1),

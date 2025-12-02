@@ -224,10 +224,7 @@ fn detect_apple_gpu() -> Option<GpuInfo> {
 /// Detect unified memory on Apple Silicon
 #[cfg(target_os = "macos")]
 fn detect_unified_memory() -> u64 {
-    let output = Command::new("sysctl")
-        .arg("hw.memsize")
-        .output()
-        .ok();
+    let output = Command::new("sysctl").arg("hw.memsize").output().ok();
 
     if let Some(out) = output {
         let stdout = String::from_utf8_lossy(&out.stdout);
@@ -254,9 +251,7 @@ fn detect_intel_gpu() -> Option<GpuInfo> {
 
     #[cfg(target_os = "linux")]
     {
-        let output = Command::new("lspci")
-            .output()
-            .ok()?;
+        let output = Command::new("lspci").output().ok()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         for line in stdout.lines() {
@@ -281,14 +276,14 @@ fn detect_cpu() -> anyhow::Result<CpuInfo> {
     let mut sys = System::new_all();
     sys.refresh_cpu_all();
 
-    let cpu_name = sys.cpus().first()
+    let cpu_name = sys
+        .cpus()
+        .first()
         .map(|cpu| cpu.brand().to_string())
         .unwrap_or_else(|| "Unknown CPU".to_string());
     let cores = num_cpus::get_physical() as u32;
     let threads = num_cpus::get() as u32;
-    let frequency = sys.cpus().first()
-        .map(|cpu| cpu.frequency())
-        .unwrap_or(0);
+    let frequency = sys.cpus().first().map(|cpu| cpu.frequency()).unwrap_or(0);
 
     Ok(CpuInfo {
         model: if cpu_name.is_empty() {
@@ -298,11 +293,7 @@ fn detect_cpu() -> anyhow::Result<CpuInfo> {
         },
         cores,
         threads,
-        frequency_mhz: if frequency > 0 {
-            Some(frequency)
-        } else {
-            None
-        },
+        frequency_mhz: if frequency > 0 { Some(frequency) } else { None },
     })
 }
 
@@ -316,9 +307,5 @@ fn detect_memory() -> anyhow::Result<MemoryInfo> {
     let available = sys.available_memory() / (1024 * 1024);
     let used = sys.used_memory() / (1024 * 1024);
 
-    Ok(MemoryInfo {
-        total_mb: total,
-        available_mb: available,
-        used_mb: used,
-    })
+    Ok(MemoryInfo { total_mb: total, available_mb: available, used_mb: used })
 }

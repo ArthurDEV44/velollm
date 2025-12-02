@@ -29,11 +29,7 @@ pub struct SequenceBlockTable {
 impl SequenceBlockTable {
     /// Create a new empty block table
     pub fn new(block_size: usize) -> Self {
-        Self {
-            block_ids: Vec::new(),
-            num_tokens: 0,
-            block_size,
-        }
+        Self { block_ids: Vec::new(), num_tokens: 0, block_size }
     }
 
     /// Get the number of tokens in this sequence
@@ -91,7 +87,9 @@ impl SequenceBlockTable {
 
         // Allocate new blocks if needed
         while self.block_ids.len() < blocks_needed {
-            let block_id = allocator.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
+            let block_id = allocator
+                .allocate()
+                .ok_or(PagedAttentionError::OutOfMemory)?;
             self.block_ids.push(block_id);
         }
 

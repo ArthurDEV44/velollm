@@ -47,11 +47,7 @@ impl BlockAllocator {
     pub fn new(num_blocks: usize) -> Self {
         let free_blocks = (0..num_blocks).map(BlockId).collect();
 
-        Self {
-            num_blocks,
-            free_blocks,
-            ref_counts: HashMap::new(),
-        }
+        Self { num_blocks, free_blocks, ref_counts: HashMap::new() }
     }
 
     /// Allocate a new block from the free pool

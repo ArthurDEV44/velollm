@@ -188,12 +188,7 @@ impl BlockManager {
         let num_blocks = config.num_blocks();
         let allocator = BlockAllocator::new(num_blocks);
 
-        Self {
-            config,
-            allocator,
-            sequences: HashMap::new(),
-            next_seq_id: 0,
-        }
+        Self { config, allocator, sequences: HashMap::new(), next_seq_id: 0 }
     }
 
     /// Create a new sequence and return its ID

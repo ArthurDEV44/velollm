@@ -1,4 +1,4 @@
-use crate::hardware::{HardwareSpec, GpuInfo, CpuInfo, MemoryInfo};
+use crate::hardware::{CpuInfo, GpuInfo, HardwareSpec, MemoryInfo};
 
 /// Ollama configuration optimizer based on hardware specifications
 ///
@@ -205,10 +205,7 @@ impl OllamaOptimizer {
 
         if let (Some(c), Some(o)) = (current.num_thread, optimized.num_thread) {
             if c != o {
-                report.push_str(&format!(
-                    "num_thread: {} → {} (CPU threads)\n",
-                    c, o
-                ));
+                report.push_str(&format!("num_thread: {} → {} (CPU threads)\n", c, o));
             }
         }
 
@@ -227,10 +224,7 @@ impl OllamaOptimizer {
         note: &str,
     ) -> String {
         if current != optimized {
-            format!(
-                "{}: {} → {} ({})\n  Note: {}\n",
-                name, current, optimized, description, note
-            )
+            format!("{}: {} → {} ({})\n  Note: {}\n", name, current, optimized, description, note)
         } else {
             String::new()
         }
@@ -270,7 +264,7 @@ impl Default for OptimizedConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hardware::{GpuVendor, GpuInfo, CpuInfo, MemoryInfo};
+    use crate::hardware::{CpuInfo, GpuInfo, GpuVendor, MemoryInfo};
 
     fn mock_hardware_high_end() -> HardwareSpec {
         HardwareSpec {

@@ -5,9 +5,9 @@
 //! - Configuration optimization
 //! - Benchmark execution (when Ollama is available)
 
-use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 
 /// Test the `velollm detect` command
 #[test]
@@ -39,8 +39,8 @@ fn test_detect_command() {
     let json_str = &stdout[json_start..];
 
     // Find the end of the JSON (last closing brace)
-    let json_value: serde_json::Value = serde_json::from_str(json_str.trim())
-        .expect("Invalid JSON in detect output");
+    let json_value: serde_json::Value =
+        serde_json::from_str(json_str.trim()).expect("Invalid JSON in detect output");
 
     // Verify required fields
     assert!(json_value.get("cpu").is_some(), "Missing cpu field in JSON");
@@ -87,9 +87,13 @@ fn test_optimize_output_file() {
 
     let output = Command::new("cargo")
         .args([
-            "run", "--bin", "velollm", "--",
+            "run",
+            "--bin",
+            "velollm",
+            "--",
             "optimize",
-            "-o", output_path.to_str().unwrap()
+            "-o",
+            output_path.to_str().unwrap(),
         ])
         .current_dir(PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap())
         .output()
@@ -107,8 +111,7 @@ fn test_optimize_output_file() {
     assert!(output_path.exists(), "Output file was not created");
 
     // Read and validate the script
-    let script = fs::read_to_string(&output_path)
-        .expect("Failed to read output file");
+    let script = fs::read_to_string(&output_path).expect("Failed to read output file");
 
     // Verify script structure
     assert!(script.starts_with("#!/bin/bash"), "Missing shebang");
@@ -148,8 +151,8 @@ fn test_detect_json_structure() {
     let json_start = stdout.find('{').expect("No JSON found");
     let json_str = &stdout[json_start..];
 
-    let json: serde_json::Value = serde_json::from_str(json_str.trim())
-        .expect("Invalid JSON structure");
+    let json: serde_json::Value =
+        serde_json::from_str(json_str.trim()).expect("Invalid JSON structure");
 
     // Verify CPU fields
     let cpu = json.get("cpu").expect("Missing cpu");
@@ -167,7 +170,9 @@ fn test_detect_json_structure() {
     let cores = cpu["cores"].as_u64().expect("cores should be a number");
     assert!(cores > 0, "CPU cores should be > 0");
 
-    let total_mb = memory["total_mb"].as_u64().expect("total_mb should be a number");
+    let total_mb = memory["total_mb"]
+        .as_u64()
+        .expect("total_mb should be a number");
     assert!(total_mb > 0, "Total memory should be > 0");
 }
 
@@ -236,9 +241,13 @@ fn test_benchmark_without_ollama() {
     // or fail gracefully with a proper error message
     let output = Command::new("cargo")
         .args([
-            "run", "--bin", "velollm", "--",
+            "run",
+            "--bin",
+            "velollm",
+            "--",
             "benchmark",
-            "--model", "test-model",
+            "--model",
+            "test-model",
         ])
         .current_dir(PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap())
         .output()

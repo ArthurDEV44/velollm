@@ -70,13 +70,7 @@ impl Statistics {
         let min = samples.iter().copied().fold(f64::INFINITY, f64::min);
         let max = samples.iter().copied().fold(f64::NEG_INFINITY, f64::max);
 
-        Self {
-            mean,
-            stddev,
-            min,
-            max,
-            samples,
-        }
+        Self { mean, stddev, min, max, samples }
     }
 }
 
@@ -162,9 +156,9 @@ fn main() -> Result<()> {
 
     // Speedup standard deviation (propagation of uncertainty)
     let speedup_stddev = if let Some(ref vanilla) = vanilla_run {
-        let rel_var_spec =
-            (speculative_run.tokens_per_second.stddev / speculative_run.tokens_per_second.mean)
-                .powi(2);
+        let rel_var_spec = (speculative_run.tokens_per_second.stddev
+            / speculative_run.tokens_per_second.mean)
+            .powi(2);
         let rel_var_vanilla =
             (vanilla.tokens_per_second.stddev / vanilla.tokens_per_second.mean).powi(2);
         speedup * (rel_var_spec + rel_var_vanilla).sqrt()
@@ -251,11 +245,7 @@ fn run_benchmark(
         time_to_first_token.push(metrics.time_to_first_token_ms);
         total_time.push(metrics.total_time_ms);
 
-        println!(
-            "{:.2} tok/s ({}ms)",
-            metrics.tokens_per_second,
-            elapsed.as_millis()
-        );
+        println!("{:.2} tok/s ({}ms)", metrics.tokens_per_second, elapsed.as_millis());
     }
 
     Ok(BenchmarkRun {

@@ -159,12 +159,30 @@ Features implemented:
 
 ---
 
-#### TASK-016: CUDA Paged Attention Kernel
+#### TASK-016: CUDA Paged Attention Kernel ✅
 **Priority**: P1
 **Estimated effort**: 16h
 **Dependencies**: TASK-015
 
-**Instructions**:
+**Completed**: Module `adapters/llamacpp/cuda/` and `adapters/llamacpp/src/cuda_paged.rs`
+
+Files:
+- `cuda/paged_attention.cuh`: C header with FFI interface
+- `cuda/paged_attention.cu`: CUDA kernel implementation
+- `src/cuda_paged.rs`: Safe Rust wrapper with PagedAttentionCuda struct
+
+Features implemented:
+- Two-pass paged attention kernel (QK computation + softmax + V accumulation)
+- FP16 and FP32 support
+- GQA (Grouped Query Attention) support
+- Multiple head dimensions (64, 80, 96, 128, 256)
+- Block sizes 16 and 32
+- Multi-architecture CUDA compilation (SM70-SM90: V100 to H100)
+- Safe Rust FFI with ForwardInput struct
+- Build integration with optional `cuda` feature flag
+- 9 unit tests for configuration and memory estimation
+
+**Original Instructions** (for reference):
 
 1. **Étudier les kernels existants**:
    ```bash
@@ -442,23 +460,23 @@ Voir [TODO_MVP.md](TODO_MVP.md) pour les détails.
 - [x] TASK-013: PagedAttention research ✅
 - [x] TASK-014: Block manager ✅
 - [x] TASK-015: llama.cpp paged KV cache integration ✅
-- [ ] TASK-016: CUDA paged attention kernel
+- [x] TASK-016: CUDA paged attention kernel ✅
 - [ ] TASK-017: Continuous batching scheduler
 - [ ] TASK-018: LocalAI adapter
 - [ ] TASK-019: vLLM adapter
 - [ ] TASK-020: Performance profiler
 
-**Progress**: 3/8 tasks (37.5%)
+**Progress**: 4/8 tasks (50%)
 
 **Tests Status**:
 - velollm-core: 48/48 tests passing ✅
 - velollm-benchmarks: 3/3 tests passing ✅
-- velollm-adapters-llamacpp: 21/21 tests passing ✅ (+14 kv_cache tests)
+- velollm-adapters-llamacpp: 29/29 tests passing ✅ (+9 cuda_paged tests)
 - velollm-adapters-ollama: 6/6 tests passing ✅
 - velollm-cli: 8/8 integration tests passing ✅
 - Doc tests: 5/5 passing ✅
 
-**Total: 91 tests passing**
+**Total: 99 tests passing**
 
 ---
 
@@ -519,4 +537,4 @@ cargo doc --open
 
 ---
 
-**Next task: TASK-016 (CUDA Paged Attention Kernel) 🚀**
+**Next task: TASK-017 (Continuous Batching Scheduler) 🚀**

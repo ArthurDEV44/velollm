@@ -71,10 +71,7 @@ pub struct BenchmarkRunner {
 
 impl BenchmarkRunner {
     pub fn new(backend: &str) -> Self {
-        Self {
-            backend: backend.to_string(),
-            ollama_url: "http://localhost:11434".to_string(),
-        }
+        Self { backend: backend.to_string(), ollama_url: "http://localhost:11434".to_string() }
     }
 
     pub fn with_url(mut self, url: String) -> Self {
@@ -111,9 +108,7 @@ impl BenchmarkRunner {
                 model: config.model.clone(),
                 prompt: config.prompt.clone(),
                 stream: false,
-                options: OllamaOptions {
-                    num_predict: config.max_tokens,
-                },
+                options: OllamaOptions { num_predict: config.max_tokens },
             };
 
             let response = client
@@ -184,7 +179,10 @@ impl BenchmarkRunner {
         let avg_tokens_per_sec = total_tokens as f64 / (total_time_ms / 1000.0);
         let avg_ttft_ms = first_token_times.iter().sum::<f64>() / config.iterations as f64;
         let avg_prompt_eval = if !prompt_eval_counts.is_empty() {
-            Some((prompt_eval_counts.iter().sum::<u32>() as f64 / prompt_eval_counts.len() as f64) as u32)
+            Some(
+                (prompt_eval_counts.iter().sum::<u32>() as f64 / prompt_eval_counts.len() as f64)
+                    as u32,
+            )
         } else {
             None
         };
@@ -233,14 +231,17 @@ pub fn get_standard_benchmarks(model: &str) -> Vec<BenchmarkConfig> {
         BenchmarkConfig {
             name: "medium_completion".to_string(),
             model: model.to_string(),
-            prompt: "Explain how neural networks learn through backpropagation in detail".to_string(),
+            prompt: "Explain how neural networks learn through backpropagation in detail"
+                .to_string(),
             max_tokens: 150,
             iterations: 3,
         },
         BenchmarkConfig {
             name: "code_generation".to_string(),
             model: model.to_string(),
-            prompt: "Write a Rust function to compute the Fibonacci sequence using dynamic programming".to_string(),
+            prompt:
+                "Write a Rust function to compute the Fibonacci sequence using dynamic programming"
+                    .to_string(),
             max_tokens: 200,
             iterations: 3,
         },
@@ -268,8 +269,7 @@ mod tests {
 
     #[test]
     fn test_custom_url() {
-        let runner = BenchmarkRunner::new("ollama")
-            .with_url("http://custom:8080".to_string());
+        let runner = BenchmarkRunner::new("ollama").with_url("http://custom:8080".to_string());
         assert_eq!(runner.ollama_url, "http://custom:8080");
     }
 }

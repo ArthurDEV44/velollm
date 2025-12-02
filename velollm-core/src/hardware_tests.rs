@@ -28,10 +28,7 @@ mod tests {
         assert!(!hw.cpu.model.is_empty(), "CPU model should be detected");
         assert!(hw.cpu.cores > 0, "CPU cores should be > 0");
         assert!(hw.cpu.threads > 0, "CPU threads should be > 0");
-        assert!(
-            hw.cpu.threads >= hw.cpu.cores,
-            "Threads should be >= cores"
-        );
+        assert!(hw.cpu.threads >= hw.cpu.cores, "Threads should be >= cores");
 
         println!("CPU: {}", hw.cpu.model);
         println!("Cores: {}", hw.cpu.cores);
@@ -51,14 +48,15 @@ mod tests {
             hw.memory.available_mb <= hw.memory.total_mb,
             "Available memory should be <= total"
         );
-        assert!(
-            hw.memory.used_mb <= hw.memory.total_mb,
-            "Used memory should be <= total"
-        );
+        assert!(hw.memory.used_mb <= hw.memory.total_mb, "Used memory should be <= total");
 
         println!("Memory:");
         println!("  Total: {} MB ({} GB)", hw.memory.total_mb, hw.memory.total_mb / 1024);
-        println!("  Available: {} MB ({} GB)", hw.memory.available_mb, hw.memory.available_mb / 1024);
+        println!(
+            "  Available: {} MB ({} GB)",
+            hw.memory.available_mb,
+            hw.memory.available_mb / 1024
+        );
         println!("  Used: {} MB ({} GB)", hw.memory.used_mb, hw.memory.used_mb / 1024);
     }
 
@@ -89,8 +87,10 @@ mod tests {
                     // Intel integrated GPUs may report 0 VRAM
                 }
                 _ => {
-                    assert!(gpu.vram_total_mb > 0 || gpu.vram_free_mb == 0,
-                           "Dedicated GPU should have VRAM info");
+                    assert!(
+                        gpu.vram_total_mb > 0 || gpu.vram_free_mb == 0,
+                        "Dedicated GPU should have VRAM info"
+                    );
                 }
             }
         } else {
@@ -124,15 +124,15 @@ mod tests {
         // Platform should contain OS and architecture
         assert!(
             hw.platform.contains("linux")
-            || hw.platform.contains("macos")
-            || hw.platform.contains("windows"),
+                || hw.platform.contains("macos")
+                || hw.platform.contains("windows"),
             "Platform should contain OS name"
         );
 
         assert!(
             hw.platform.contains("x86_64")
-            || hw.platform.contains("aarch64")
-            || hw.platform.contains("arm"),
+                || hw.platform.contains("aarch64")
+                || hw.platform.contains("arm"),
             "Platform should contain architecture"
         );
 

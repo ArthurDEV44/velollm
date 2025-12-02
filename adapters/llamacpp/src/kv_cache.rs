@@ -6,7 +6,9 @@
 
 use std::collections::HashMap;
 use thiserror::Error;
-use velollm_core::paged_attention::{BlockId, BlockManager, BlockManagerConfig, PagedAttentionError};
+use velollm_core::paged_attention::{
+    BlockId, BlockManager, BlockManagerConfig, PagedAttentionError,
+};
 
 /// Errors that can occur during KV cache operations
 #[derive(Debug, Error)]
@@ -121,7 +123,11 @@ impl PagedKvCache {
         // Store metadata
         let metadata = SequenceMetadata {
             pos_min: if num_tokens > 0 { 0 } else { -1 },
-            pos_max: if num_tokens > 0 { (num_tokens - 1) as LlamaPos } else { -1 },
+            pos_max: if num_tokens > 0 {
+                (num_tokens - 1) as LlamaPos
+            } else {
+                -1
+            },
         };
         self.metadata.insert(llama_seq_id, metadata);
 
@@ -153,7 +159,11 @@ impl PagedKvCache {
         // Store metadata
         let metadata = SequenceMetadata {
             pos_min: if num_tokens > 0 { 0 } else { -1 },
-            pos_max: if num_tokens > 0 { (num_tokens - 1) as LlamaPos } else { -1 },
+            pos_max: if num_tokens > 0 {
+                (num_tokens - 1) as LlamaPos
+            } else {
+                -1
+            },
         };
         self.metadata.insert(seq_id, metadata);
 

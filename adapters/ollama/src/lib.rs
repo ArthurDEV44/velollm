@@ -80,29 +80,21 @@ impl OllamaConfig {
                 .ok()
                 .and_then(|s| s.parse().ok()),
             keep_alive: env::var("OLLAMA_KEEP_ALIVE").ok(),
-            num_ctx: env::var("OLLAMA_NUM_CTX")
-                .ok()
-                .and_then(|s| s.parse().ok()),
+            num_ctx: env::var("OLLAMA_NUM_CTX").ok().and_then(|s| s.parse().ok()),
             num_batch: env::var("OLLAMA_NUM_BATCH")
                 .ok()
                 .and_then(|s| s.parse().ok()),
-            num_gpu: env::var("OLLAMA_NUM_GPU")
-                .ok()
-                .and_then(|s| s.parse().ok()),
+            num_gpu: env::var("OLLAMA_NUM_GPU").ok().and_then(|s| s.parse().ok()),
             num_thread: env::var("OLLAMA_NUM_THREAD")
                 .ok()
                 .and_then(|s| s.parse().ok()),
             ollama_host: env::var("OLLAMA_HOST").ok(),
             ollama_models: env::var("OLLAMA_MODELS").ok(),
-            ollama_debug: env::var("OLLAMA_DEBUG")
-                .ok()
-                .and_then(|s| s.parse().ok()),
+            ollama_debug: env::var("OLLAMA_DEBUG").ok().and_then(|s| s.parse().ok()),
             ollama_flash_attention: env::var("OLLAMA_FLASH_ATTENTION")
                 .ok()
                 .map(|s| s == "1" || s.to_lowercase() == "true"),
-            ollama_num_gpu: env::var("OLLAMA_NUM_GPU")
-                .ok()
-                .and_then(|s| s.parse().ok()),
+            ollama_num_gpu: env::var("OLLAMA_NUM_GPU").ok().and_then(|s| s.parse().ok()),
         }
     }
 
@@ -159,10 +151,7 @@ impl OllamaConfig {
             exports.push(format!("export OLLAMA_DEBUG={}", if val { "1" } else { "0" }));
         }
         if let Some(val) = self.ollama_flash_attention {
-            exports.push(format!(
-                "export OLLAMA_FLASH_ATTENTION={}",
-                if val { "1" } else { "0" }
-            ));
+            exports.push(format!("export OLLAMA_FLASH_ATTENTION={}", if val { "1" } else { "0" }));
         }
 
         exports.join("\n")

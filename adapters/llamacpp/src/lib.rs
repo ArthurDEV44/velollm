@@ -4,6 +4,7 @@ use std::process::{Command, Stdio};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+pub mod cuda_paged;
 pub mod kv_cache;
 
 /// Configuration for speculative decoding with llama.cpp
@@ -32,9 +33,7 @@ impl SpeculativeRunner {
     /// # Arguments
     /// * `llama_cpp_path` - Path to the llama.cpp build directory
     pub fn new(llama_cpp_path: &str) -> Self {
-        Self {
-            llama_cpp_path: llama_cpp_path.to_string(),
-        }
+        Self { llama_cpp_path: llama_cpp_path.to_string() }
     }
 
     /// Run speculative decoding inference
@@ -48,10 +47,16 @@ impl SpeculativeRunner {
         // Determine the correct binary path
         let binary_path = if config.draft_model_path.is_empty() {
             // Vanilla mode - use regular llama-cli
-            Path::new(&self.llama_cpp_path).join("build").join("bin").join("llama-cli")
+            Path::new(&self.llama_cpp_path)
+                .join("build")
+                .join("bin")
+                .join("llama-cli")
         } else {
             // Speculative mode - use llama-speculative
-            Path::new(&self.llama_cpp_path).join("build").join("bin").join("llama-speculative")
+            Path::new(&self.llama_cpp_path)
+                .join("build")
+                .join("bin")
+                .join("llama-speculative")
         };
 
         let mut cmd = Command::new(&binary_path);
@@ -62,16 +67,21 @@ impl SpeculativeRunner {
         // Add speculative-specific arguments if in speculative mode
         if !config.draft_model_path.is_empty() {
             cmd.args([
-                "-md", &config.draft_model_path,
-                "--draft", &config.n_draft.to_string(),
+                "-md",
+                &config.draft_model_path,
+                "--draft",
+                &config.n_draft.to_string(),
             ]);
         }
 
         // Add generation parameters
         cmd.args([
-            "-n", &config.n_predict.to_string(),
-            "-p", &config.prompt,
-            "-ngl", "99", // Offload all layers to GPU if available
+            "-n",
+            &config.n_predict.to_string(),
+            "-p",
+            &config.prompt,
+            "-ngl",
+            "99",                  // Offload all layers to GPU if available
             "--no-display-prompt", // Don't echo the prompt
         ]);
 
@@ -168,12 +178,7 @@ fn extract_tokens_per_second(line: &str) -> Option<f64> {
     // Line format: "... (   40.82 ms per token,    24.50 tokens per second)"
     if let Some(tps_part) = line.split("tokens per second").next() {
         // Get the last number before "tokens per second"
-        tps_part
-            .split(',')
-            .next_back()?
-            .trim()
-            .parse()
-            .ok()
+        tps_part.split(',').next_back()?.trim().parse().ok()
     } else {
         None
     }
