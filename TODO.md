@@ -1749,30 +1749,31 @@ Chaque tâche suit ce template:
 - ✅ TASK-012: Documentation (CONFIG_GUIDE.md, ARCHITECTURE.md, README.md status update)
 
 **Tests Status**:
-- velollm-core: 13/13 tests passing ✅ (+5 optimizer tests)
+- velollm-core: 48/48 tests passing ✅ (+35 paged_attention tests)
 - velollm-benchmarks: 3/3 tests passing ✅
 - velollm-adapters-llamacpp: 6/6 tests passing ✅
 - velollm-adapters-ollama: 6/6 tests passing ✅
-- velollm-cli: 8/8 integration tests passing ✅ (NEW)
+- velollm-cli: 8/8 integration tests passing ✅
 - velollm-bench-speculative: CLI binary ✅
-- Doc tests: 3/3 passing ✅
+- Doc tests: 4/4 passing ✅
 - Build: ✅ `cargo build --all` successful
 - Clippy: ✅ No warnings
 - CI: ✅ GitHub Actions configuré (.github/workflows/ci.yml)
 
-**Total: 39 tests passing**
+**Total: 75 tests passing**
 
 ### Phase 2 Advanced (Mois 4-6)
 - [x] TASK-013: PagedAttention research ✅
-- [ ] TASK-014: Block manager
+- [x] TASK-014: Block manager ✅
 - [ ] TASK-015: llama.cpp paged KV cache integration
 - [ ] TASK-016: CUDA paged attention kernel
 - [ ] [... more tasks ...]
 
-**Progress**: 1/20 tasks (5%)
+**Progress**: 2/20 tasks (10%)
 
 **Completed Tasks Details (Phase 2)**:
 - ✅ TASK-013: PagedAttention analysis (docs/research/paged_attention.md - concept, vLLM implementation, llama.cpp integration strategy, performance expectations)
+- ✅ TASK-014: Block Manager implementation (paged_attention module: BlockAllocator, SequenceBlockTable, BlockManager, 35 unit tests)
 
 ---
 
