@@ -45,7 +45,7 @@ Le codebase VeloLLM est **globalement bien structuré** avec une architecture mo
 | Documentation | ⭐⭐⭐⭐ | Bons doc comments, diagrammes ASCII |
 | Performance | ⭐⭐⭐ | Améliorations possibles (voir section dédiée) |
 | Error Handling | ⭐⭐⭐ | Mixte - peut être unifié |
-| Logging | ⭐⭐ | À implémenter (actuellement println) |
+| Logging | ⭐⭐⭐⭐ | ✅ Implémenté avec `tracing` |
 | Robustesse | ⭐⭐⭐ | Parsing fragile, validation partielle |
 
 ---
@@ -122,31 +122,37 @@ velollm/
 
 ## Améliorations Prioritaires
 
-### P1 - Logging Structuré (Impact: Élevé)
+### ✅ P1 - Logging Structuré (Impact: Élevé) - COMPLÉTÉ
 
-**Problème**: Utilisation de `println!` partout, pas de niveaux de log ni de contexte structuré.
+> **Statut**: ✅ Implémenté le 2025-12-03
 
-**Solution**: Adopter le crate `tracing` pour logging structuré.
+**Implémentation réalisée**:
+- Ajout de `tracing` et `tracing-subscriber` à tous les crates
+- Instrumentation avec `#[instrument]` pour traçage automatique des spans
+- Niveaux de log configurables via `-v` (verbose) et `-q` (quiet) dans le CLI
+- Filtrage des logs via `RUST_LOG` environment variable
+- Logs structurés avec champs contextuels (model, iterations, vram, etc.)
 
-```rust
-// Avant (actuel)
-println!("  {} Hardware Detection Complete", "✓".green());
-
-// Après (recommandé)
-use tracing::{info, debug, instrument};
-
-#[instrument(skip(self))]
-pub fn detect() -> Result<HardwareSpec> {
-    info!("Starting hardware detection");
-    debug!(os = %std::env::consts::OS, "Detected OS");
-    // ...
-}
-```
-
-**Fichiers à modifier**:
-- `velollm-cli/src/main.rs` - Initialisation tracing-subscriber
-- `velollm-core/src/hardware.rs` - Logging détection
+**Fichiers modifiés**:
+- `velollm-cli/src/main.rs` - Initialisation tracing-subscriber avec EnvFilter
+- `velollm-core/src/hardware.rs` - Logging détection hardware
+- `velollm-core/src/optimizer.rs` - Logging optimisation
 - `velollm-benchmarks/src/lib.rs` - Logging benchmarks
+
+**Exemple d'utilisation**:
+```bash
+# Mode verbeux (INFO level)
+velollm detect -v
+
+# Mode debug
+velollm detect -vv
+
+# Mode trace complet
+velollm detect -vvv
+
+# Via environment variable
+RUST_LOG=debug velollm detect
+```
 
 **Références**:
 - [tracing crate](https://docs.rs/tracing)
@@ -605,7 +611,7 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 
 | ID | Tâche | Effort | Impact |
 |----|-------|--------|--------|
-| P1-1 | Ajouter tracing/logging structuré | 4h | Élevé |
+| P1-1 | ✅ Ajouter tracing/logging structuré | ~~4h~~ | ✅ Complété |
 | P1-2 | Unifier error handling | 6h | Élevé |
 | C1 | Supprimer champ dupliqué ollama_num_gpu | 15min | Faible |
 | C2 | Standardiser messages d'erreur | 1h | Faible |
@@ -656,4 +662,6 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 
 Le codebase VeloLLM est sur de bonnes bases avec une architecture solide et une implémentation fidèle des patterns d'optimisation LLM modernes. Les améliorations prioritaires (logging, error handling, robustesse parsing) augmenteront significativement la qualité de production. Les optimisations de performance (priority queue, LIFO allocation) apporteront des gains mesurables à haute charge.
 
-**Prochaine étape recommandée**: Implémenter le logging structuré (P1-1) car il facilitera le debugging et le profiling pour toutes les autres améliorations.
+**Prochaine étape recommandée**: Unifier l'error handling (P1-2) en migrant vers des types d'erreurs structurés avec `thiserror` pour une meilleure gestion des erreurs à travers les crates.
+
+> ✅ **P1-1 complété** (2025-12-03): Logging structuré implémenté avec `tracing` dans tous les crates (CLI, core, benchmarks).

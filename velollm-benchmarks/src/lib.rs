@@ -6,6 +6,7 @@ use anyhow::Context;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
+use tracing::{debug, info, instrument, trace, warn};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkConfig {
@@ -80,14 +81,20 @@ impl BenchmarkRunner {
     }
 
     /// Run a single benchmark configuration
+    #[instrument(skip(self), fields(backend = %self.backend, benchmark = %config.name))]
     pub async fn run(&self, config: &BenchmarkConfig) -> anyhow::Result<BenchmarkResult> {
+        info!(model = %config.model, iterations = config.iterations, "Starting benchmark");
         match self.backend.as_str() {
             "ollama" => self.run_ollama(config).await,
-            _ => anyhow::bail!("Unsupported backend: {}", self.backend),
+            _ => {
+                warn!(backend = %self.backend, "Unsupported backend requested");
+                anyhow::bail!("Unsupported backend: {}", self.backend)
+            }
         }
     }
 
     /// Run Ollama benchmark
+    #[instrument(skip(self, config), fields(url = %self.ollama_url, model = %config.model))]
     async fn run_ollama(&self, config: &BenchmarkConfig) -> anyhow::Result<BenchmarkResult> {
         let client = reqwest::Client::new();
         let mut total_time_ms = 0f64;
@@ -96,9 +103,15 @@ impl BenchmarkRunner {
         let mut prompt_eval_counts = Vec::new();
         let mut eval_counts = Vec::new();
 
+        debug!(
+            max_tokens = config.max_tokens,
+            iterations = config.iterations,
+            "Initializing Ollama benchmark"
+        );
         println!("Running benchmark: {} ({} iterations)", config.name, config.iterations);
 
         for i in 0..config.iterations {
+            trace!(iteration = i + 1, total = config.iterations, "Starting iteration");
             print!("  Iteration {}/{}... ", i + 1, config.iterations);
             std::io::Write::flush(&mut std::io::stdout()).ok();
 
@@ -121,6 +134,7 @@ impl BenchmarkRunner {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await?;
+                warn!(status = %status, "Ollama API returned error");
                 anyhow::bail!("Ollama API error ({}): {}", status, text);
             }
 
@@ -173,6 +187,14 @@ impl BenchmarkRunner {
                 0.0
             };
 
+            trace!(
+                iteration = i + 1,
+                tokens = tokens,
+                tokens_per_sec = tokens_per_sec,
+                elapsed_ms = elapsed_ms,
+                ttft_ms = ttft_ms,
+                "Iteration complete"
+            );
             println!("{:.1} tok/s ({:.0}ms)", tokens_per_sec, elapsed_ms);
         }
 
@@ -192,6 +214,13 @@ impl BenchmarkRunner {
             None
         };
 
+        info!(
+            avg_tokens_per_sec = avg_tokens_per_sec,
+            avg_ttft_ms = avg_ttft_ms,
+            total_tokens = total_tokens,
+            total_time_ms = total_time_ms,
+            "Benchmark complete"
+        );
         println!("  Average: {:.1} tok/s, TTFT: {:.1}ms\n", avg_tokens_per_sec, avg_ttft_ms);
 
         Ok(BenchmarkResult {
@@ -207,14 +236,22 @@ impl BenchmarkRunner {
     }
 
     /// Check if Ollama is running
+    #[instrument(skip(self), fields(url = %self.ollama_url))]
     pub async fn check_ollama_available(&self) -> anyhow::Result<bool> {
+        debug!("Checking Ollama availability");
         let client = reqwest::Client::new();
         let response = client
             .get(format!("{}/api/tags", self.ollama_url))
             .send()
             .await;
 
-        Ok(response.is_ok() && response.unwrap().status().is_success())
+        let available = response.is_ok() && response.unwrap().status().is_success();
+        if available {
+            debug!("Ollama is available");
+        } else {
+            warn!("Ollama is not available at {}", self.ollama_url);
+        }
+        Ok(available)
     }
 }
 

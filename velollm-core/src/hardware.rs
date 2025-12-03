@@ -5,6 +5,7 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use sysinfo::System;
+use tracing::{debug, instrument, trace, warn};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HardwareSpec {
@@ -51,48 +52,89 @@ pub struct MemoryInfo {
 
 impl HardwareSpec {
     /// Detect current hardware configuration
+    #[instrument(skip_all)]
     pub fn detect() -> anyhow::Result<Self> {
+        debug!("Starting hardware detection");
+
         let gpu = detect_gpu();
         let cpu = detect_cpu()?;
         let memory = detect_memory()?;
 
-        Ok(HardwareSpec {
+        let spec = HardwareSpec {
             gpu,
             cpu,
             memory,
             os: std::env::consts::OS.to_string(),
             platform: format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH),
-        })
+        };
+
+        debug!(
+            os = %spec.os,
+            platform = %spec.platform,
+            has_gpu = spec.gpu.is_some(),
+            cpu_cores = spec.cpu.cores,
+            memory_mb = spec.memory.total_mb,
+            "Hardware detection complete"
+        );
+
+        Ok(spec)
     }
 }
 
 /// Detect GPU information
 fn detect_gpu() -> Option<GpuInfo> {
+    trace!("Attempting GPU detection");
+
     // Try NVIDIA first
     if let Some(gpu) = detect_nvidia_gpu() {
+        debug!(
+            name = %gpu.name,
+            vendor = ?gpu.vendor,
+            vram_mb = gpu.vram_total_mb,
+            "NVIDIA GPU detected"
+        );
         return Some(gpu);
     }
 
     // Try AMD
     if let Some(gpu) = detect_amd_gpu() {
+        debug!(
+            name = %gpu.name,
+            vendor = ?gpu.vendor,
+            vram_mb = gpu.vram_total_mb,
+            "AMD GPU detected"
+        );
         return Some(gpu);
     }
 
     // Try Apple Silicon
     if let Some(gpu) = detect_apple_gpu() {
+        debug!(
+            name = %gpu.name,
+            vendor = ?gpu.vendor,
+            "Apple Silicon GPU detected"
+        );
         return Some(gpu);
     }
 
     // Try Intel (basic detection)
     if let Some(gpu) = detect_intel_gpu() {
+        debug!(
+            name = %gpu.name,
+            vendor = ?gpu.vendor,
+            "Intel GPU detected"
+        );
         return Some(gpu);
     }
 
+    debug!("No GPU detected");
     None
 }
 
 /// Detect NVIDIA GPU using nvidia-smi
 pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
+    trace!("Trying nvidia-smi");
+
     let output = Command::new("nvidia-smi")
         .args([
             "--query-gpu=name,memory.total,memory.free,driver_version,compute_cap",
@@ -102,10 +144,13 @@ pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
         .ok()?;
 
     if !output.status.success() {
+        trace!("nvidia-smi command failed or not found");
         return None;
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
+    trace!(output = %stdout, "nvidia-smi output");
+
     let line = stdout.lines().next()?;
     let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
 
@@ -119,22 +164,27 @@ pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
             compute_capability: parts.get(4).map(|s| s.to_string()),
         })
     } else {
+        warn!(parts = parts.len(), "Unexpected nvidia-smi output format");
         None
     }
 }
 
 /// Detect AMD GPU using rocm-smi
 fn detect_amd_gpu() -> Option<GpuInfo> {
+    trace!("Trying rocm-smi");
+
     let output = Command::new("rocm-smi")
         .args(["--showproductname", "--showmeminfo", "vram"])
         .output()
         .ok()?;
 
     if !output.status.success() {
+        trace!("rocm-smi command failed or not found");
         return None;
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
+    trace!(output = %stdout, "rocm-smi output");
 
     // Parse rocm-smi output (format varies)
     // This is a simplified parser - real implementation would be more robust
@@ -273,6 +323,8 @@ fn detect_intel_gpu() -> Option<GpuInfo> {
 
 /// Detect CPU information
 fn detect_cpu() -> anyhow::Result<CpuInfo> {
+    trace!("Detecting CPU information");
+
     let mut sys = System::new_all();
     sys.refresh_cpu_all();
 
@@ -285,20 +337,28 @@ fn detect_cpu() -> anyhow::Result<CpuInfo> {
     let threads = num_cpus::get() as u32;
     let frequency = sys.cpus().first().map(|cpu| cpu.frequency()).unwrap_or(0);
 
-    Ok(CpuInfo {
-        model: if cpu_name.is_empty() {
-            "Unknown CPU".to_string()
-        } else {
-            cpu_name
-        },
+    let info = CpuInfo {
+        model: if cpu_name.is_empty() { "Unknown CPU".to_string() } else { cpu_name },
         cores,
         threads,
         frequency_mhz: if frequency > 0 { Some(frequency) } else { None },
-    })
+    };
+
+    debug!(
+        model = %info.model,
+        cores = info.cores,
+        threads = info.threads,
+        frequency_mhz = ?info.frequency_mhz,
+        "CPU detected"
+    );
+
+    Ok(info)
 }
 
 /// Detect memory information
 fn detect_memory() -> anyhow::Result<MemoryInfo> {
+    trace!("Detecting memory information");
+
     let mut sys = System::new_all();
     sys.refresh_memory();
 
@@ -307,5 +367,14 @@ fn detect_memory() -> anyhow::Result<MemoryInfo> {
     let available = sys.available_memory() / (1024 * 1024);
     let used = sys.used_memory() / (1024 * 1024);
 
-    Ok(MemoryInfo { total_mb: total, available_mb: available, used_mb: used })
+    let info = MemoryInfo { total_mb: total, available_mb: available, used_mb: used };
+
+    debug!(
+        total_mb = info.total_mb,
+        available_mb = info.available_mb,
+        used_mb = info.used_mb,
+        "Memory detected"
+    );
+
+    Ok(info)
 }

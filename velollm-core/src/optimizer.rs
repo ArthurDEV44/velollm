@@ -1,4 +1,5 @@
 use crate::hardware::{CpuInfo, GpuInfo, HardwareSpec, MemoryInfo};
+use tracing::{debug, instrument, trace};
 
 /// Ollama configuration optimizer based on hardware specifications
 ///
@@ -24,19 +25,32 @@ impl OllamaOptimizer {
     /// let hw = HardwareSpec::detect().unwrap();
     /// let config = OllamaOptimizer::optimize(&hw);
     /// ```
+    #[instrument(skip_all, fields(has_gpu = hw.gpu.is_some()))]
     pub fn optimize(hw: &HardwareSpec) -> OptimizedConfig {
+        debug!("Starting optimization for hardware");
         let mut config = OptimizedConfig::default();
 
         // GPU-based optimizations (highest priority)
         if let Some(ref gpu) = hw.gpu {
+            debug!(gpu_name = %gpu.name, vram_mb = gpu.vram_total_mb, "Optimizing for GPU");
             config = Self::optimize_for_gpu(config, gpu);
         } else {
             // CPU-only optimizations
+            debug!(cpu_threads = hw.cpu.threads, "Optimizing for CPU-only mode");
             config = Self::optimize_for_cpu(config, &hw.cpu);
         }
 
         // Memory-based optimizations (applies to all)
+        debug!(memory_mb = hw.memory.total_mb, "Applying memory optimizations");
         config = Self::optimize_memory(config, &hw.memory);
+
+        debug!(
+            num_parallel = config.num_parallel,
+            num_gpu = config.num_gpu,
+            num_batch = config.num_batch,
+            num_ctx = config.num_ctx,
+            "Optimization complete"
+        );
 
         config
     }
@@ -44,6 +58,7 @@ impl OllamaOptimizer {
     /// Optimize configuration for GPU workloads
     fn optimize_for_gpu(mut config: OptimizedConfig, gpu: &GpuInfo) -> OptimizedConfig {
         let vram_gb = gpu.vram_total_mb / 1024;
+        trace!(vram_gb = vram_gb, "Calculating GPU optimizations");
 
         // num_parallel: Concurrent request handling
         // Rule: VRAM / (estimated model memory footprint)
@@ -91,11 +106,20 @@ impl OllamaOptimizer {
             16384 // Maximum for very large VRAM
         };
 
+        trace!(
+            num_parallel = config.num_parallel,
+            num_batch = config.num_batch,
+            num_ctx = config.num_ctx,
+            "GPU optimization values set"
+        );
+
         config
     }
 
     /// Optimize configuration for CPU-only workloads
     fn optimize_for_cpu(mut config: OptimizedConfig, cpu: &CpuInfo) -> OptimizedConfig {
+        trace!(threads = cpu.threads, "Calculating CPU optimizations");
+
         // Disable GPU offloading
         config.num_gpu = 0;
 
@@ -111,12 +135,19 @@ impl OllamaOptimizer {
         // CPU is slower, so only handle 1 request at a time
         config.num_parallel = 1;
 
+        trace!(
+            num_thread = ?config.num_thread,
+            num_batch = config.num_batch,
+            "CPU optimization values set"
+        );
+
         config
     }
 
     /// Optimize memory-related settings
     fn optimize_memory(mut config: OptimizedConfig, mem: &MemoryInfo) -> OptimizedConfig {
         let mem_gb = mem.total_mb / 1024;
+        trace!(mem_gb = mem_gb, "Calculating memory optimizations");
 
         // max_loaded_models: Keep models in RAM for faster switching
         // Rule: Each model ~2-10GB RAM depending on size
@@ -141,6 +172,12 @@ impl OllamaOptimizer {
         } else {
             "1h".to_string() // Very long for high-RAM systems
         };
+
+        trace!(
+            max_loaded_models = config.max_loaded_models,
+            keep_alive = %config.keep_alive,
+            "Memory optimization values set"
+        );
 
         config
     }
