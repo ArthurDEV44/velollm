@@ -85,9 +85,8 @@ impl LlamaCppParser {
     /// - "eval time =    2000.00 ms /"
     pub fn extract_time_ms(line: &str) -> Option<f64> {
         // Pattern: "= <number> ms" with flexible spacing
-        static TIME_REGEX: Lazy<Regex> = Lazy::new(|| {
-            Regex::new(r"=\s+(\d+(?:\.\d+)?)\s*ms").expect("Invalid time regex")
-        });
+        static TIME_REGEX: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"=\s+(\d+(?:\.\d+)?)\s*ms").expect("Invalid time regex"));
 
         TIME_REGEX
             .captures(line)
@@ -120,9 +119,8 @@ impl LlamaCppParser {
     /// - "/    59 tokens"
     pub fn extract_token_count(line: &str) -> Option<u32> {
         // Pattern: "/ <number> tokens"
-        static TOKEN_REGEX: Lazy<Regex> = Lazy::new(|| {
-            Regex::new(r"/\s+(\d+)\s+tokens").expect("Invalid token count regex")
-        });
+        static TOKEN_REGEX: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"/\s+(\d+)\s+tokens").expect("Invalid token count regex"));
 
         TOKEN_REGEX
             .captures(line)
@@ -136,9 +134,8 @@ impl LlamaCppParser {
     /// - "/ 49 runs"
     pub fn extract_run_count(line: &str) -> Option<u32> {
         // Pattern: "/ <number> runs"
-        static RUN_REGEX: Lazy<Regex> = Lazy::new(|| {
-            Regex::new(r"/\s+(\d+)\s+runs").expect("Invalid run count regex")
-        });
+        static RUN_REGEX: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"/\s+(\d+)\s+runs").expect("Invalid run count regex"));
 
         RUN_REGEX
             .captures(line)
@@ -264,66 +261,43 @@ Generation complete.
 
     #[test]
     fn test_extract_time_ms() {
-        assert_eq!(
-            LlamaCppParser::extract_time_ms("load time =     123.45 ms"),
-            Some(123.45)
-        );
-        assert_eq!(
-            LlamaCppParser::extract_time_ms("eval time =    2000.00 ms /"),
-            Some(2000.00)
-        );
-        assert_eq!(
-            LlamaCppParser::extract_time_ms("time = 1000 ms"),
-            Some(1000.0)
-        );
+        assert_eq!(LlamaCppParser::extract_time_ms("load time =     123.45 ms"), Some(123.45));
+        assert_eq!(LlamaCppParser::extract_time_ms("eval time =    2000.00 ms /"), Some(2000.00));
+        assert_eq!(LlamaCppParser::extract_time_ms("time = 1000 ms"), Some(1000.0));
     }
 
     #[test]
     fn test_extract_tokens_per_second() {
         assert_eq!(
-            LlamaCppParser::extract_tokens_per_second("(   40.82 ms per token,    24.50 tokens per second)"),
+            LlamaCppParser::extract_tokens_per_second(
+                "(   40.82 ms per token,    24.50 tokens per second)"
+            ),
             Some(24.50)
         );
         assert_eq!(
-            LlamaCppParser::extract_tokens_per_second("(0.20 ms per token, 4882.81 tokens per second)"),
+            LlamaCppParser::extract_tokens_per_second(
+                "(0.20 ms per token, 4882.81 tokens per second)"
+            ),
             Some(4882.81)
         );
     }
 
     #[test]
     fn test_extract_token_count() {
-        assert_eq!(
-            LlamaCppParser::extract_token_count("/    10 tokens ("),
-            Some(10)
-        );
-        assert_eq!(
-            LlamaCppParser::extract_token_count("/ 59 tokens"),
-            Some(59)
-        );
+        assert_eq!(LlamaCppParser::extract_token_count("/    10 tokens ("), Some(10));
+        assert_eq!(LlamaCppParser::extract_token_count("/ 59 tokens"), Some(59));
     }
 
     #[test]
     fn test_extract_run_count() {
-        assert_eq!(
-            LlamaCppParser::extract_run_count("/    49 runs   ("),
-            Some(49)
-        );
-        assert_eq!(
-            LlamaCppParser::extract_run_count("/ 30 runs"),
-            Some(30)
-        );
+        assert_eq!(LlamaCppParser::extract_run_count("/    49 runs   ("), Some(49));
+        assert_eq!(LlamaCppParser::extract_run_count("/ 30 runs"), Some(30));
     }
 
     #[test]
     fn test_extract_ms_per_token() {
-        assert_eq!(
-            LlamaCppParser::extract_ms_per_token("(   40.82 ms per token,"),
-            Some(40.82)
-        );
-        assert_eq!(
-            LlamaCppParser::extract_ms_per_token("(0.20 ms per token,"),
-            Some(0.20)
-        );
+        assert_eq!(LlamaCppParser::extract_ms_per_token("(   40.82 ms per token,"), Some(40.82));
+        assert_eq!(LlamaCppParser::extract_ms_per_token("(0.20 ms per token,"), Some(0.20));
     }
 
     #[test]

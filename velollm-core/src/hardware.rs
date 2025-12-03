@@ -4,9 +4,9 @@
 
 use crate::command::{run_with_default_timeout, CommandResult};
 use crate::error::HardwareError;
-use crate::parser::{NvidiaSmiParser, RocmSmiParser};
 #[cfg(target_os = "macos")]
 use crate::parser::AppleChip;
+use crate::parser::{NvidiaSmiParser, RocmSmiParser};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use sysinfo::System;
@@ -356,7 +356,11 @@ fn detect_cpu() -> Result<CpuInfo, HardwareError> {
     }
 
     let info = CpuInfo {
-        model: if cpu_name.is_empty() { "Unknown CPU".to_string() } else { cpu_name },
+        model: if cpu_name.is_empty() {
+            "Unknown CPU".to_string()
+        } else {
+            cpu_name
+        },
         cores,
         threads,
         frequency_mhz: if frequency > 0 { Some(frequency) } else { None },

@@ -35,8 +35,14 @@ impl NvidiaSmiParser {
             name: parts[0].to_string(),
             vram_total_mb: parts[1].parse().ok()?,
             vram_free_mb: parts[2].parse().ok()?,
-            driver_version: parts.get(3).filter(|s| !s.is_empty()).map(|s| s.to_string()),
-            compute_capability: parts.get(4).filter(|s| !s.is_empty()).map(|s| s.to_string()),
+            driver_version: parts
+                .get(3)
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string()),
+            compute_capability: parts
+                .get(4)
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string()),
         })
     }
 
@@ -55,10 +61,7 @@ impl NvidiaSmiParser {
         MEMORY_REGEX.captures(output).and_then(|caps| {
             let used: u64 = caps.get(1)?.as_str().parse().ok()?;
             let total: u64 = caps.get(2)?.as_str().parse().ok()?;
-            Some(GpuMemoryInfo {
-                total_mb: total,
-                free_mb: total.saturating_sub(used),
-            })
+            Some(GpuMemoryInfo { total_mb: total, free_mb: total.saturating_sub(used) })
         })
     }
 
@@ -120,8 +123,7 @@ mod tests {
 
     // ===== Test fixtures =====
 
-    const CSV_OUTPUT_FULL: &str =
-        "NVIDIA GeForce RTX 4090, 24564, 23456, 545.23.08, 8.9\n";
+    const CSV_OUTPUT_FULL: &str = "NVIDIA GeForce RTX 4090, 24564, 23456, 545.23.08, 8.9\n";
 
     const CSV_OUTPUT_MINIMAL: &str = "NVIDIA GeForce GTX 1080, 8192, 7500\n";
 

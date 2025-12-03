@@ -1,6 +1,6 @@
 # VeloLLM
 
-**Autopilot for Local LLM Inference** - Zero-config performance optimization for Ollama, llama.cpp, and more.
+**Autopilot for Local LLM Inference** - High-performance proxy and optimization toolkit for Ollama and llama.cpp.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=flat&logo=rust&logoColor=white)](https://www.rust-lang.org/)
@@ -8,13 +8,29 @@
 
 ## The Problem
 
-Local LLM inference is **35-50x slower** than cloud solutions (vLLM, Morph) despite comparable hardware. VeloLLM bridges this gap by bringing production-grade optimizations to local deployments.
+Local LLM inference is **19x slower** than production solutions like vLLM. VeloLLM bridges this gap by providing a high-performance Rust proxy that optimizes requests, improves tool calling reliability, and brings production-grade features to local deployments.
 
-**Current State**:
-- Cloud (vLLM): 10,000+ tokens/s with speculative decoding
-- Local (Ollama): 200-300 tokens/s (average user)
+**Performance Gap**:
+- Production (vLLM): 793 tokens/s, 80ms P99 latency
+- Local (Ollama): 41 tokens/s, 673ms P99 latency
 
-**VeloLLM Goal**: Close this performance gap with intelligent, automatic optimizations.
+**VeloLLM Goal**: Bring vLLM-level performance to Ollama users while keeping the simplicity.
+
+---
+
+## What is VeloLLM?
+
+VeloLLM is a **transparent proxy** that sits between your applications and Ollama. It intercepts API calls, optimizes them, and forwards them to Ollama. Your existing tools work without modification - just change the API endpoint.
+
+**Key Benefits**:
+- **Drop-in replacement**: Compatible with OpenAI API format
+- **Tool calling improvements**: Fixes JSON formatting issues, deduplicates calls, validates arguments
+- **Performance optimization**: Request batching, caching, intelligent scheduling
+- **Metrics & observability**: Track tokens/s, latency, cache hit rates
+
+**Supported Models for Tool Calling**:
+- Mistral (mistral:7b, mistral-small:24b)
+- Llama (llama3.2:3b, llama3.1:8b, llama3.1:70b)
 
 ---
 
@@ -23,189 +39,238 @@ Local LLM inference is **35-50x slower** than cloud solutions (vLLM, Morph) desp
 ### Installation
 
 ```bash
-# From crates.io (coming soon)
-cargo install velollm
-
-# From source
 git clone https://github.com/ArthurDEV44/velollm.git
 cd velollm
-cargo install --path velollm-cli
+cargo build --release
 ```
 
-### Usage
+### Option 1: Use the Proxy (Recommended)
+
+Start the VeloLLM proxy to get OpenAI API compatibility and optimizations:
 
 ```bash
-# 1. Detect your hardware
-velollm detect
+# Make sure Ollama is running
+ollama serve &
 
-# 2. Optimize Ollama configuration
-velollm optimize --dry-run  # Preview changes
-velollm optimize -o velollm.sh
-source velollm.sh
-
-# 3. Benchmark performance
-velollm benchmark
-
-# 4. Compare before/after
-velollm benchmark --compare baseline.json optimized.json
+# Start VeloLLM proxy
+cargo run -p velollm-proxy --release
 ```
 
----
+The proxy listens on `http://localhost:8000` and forwards requests to Ollama at `http://localhost:11434`.
 
-## Features
+**Configure your applications** to use VeloLLM instead of Ollama directly:
+- OpenAI SDK: Set `OPENAI_BASE_URL=http://localhost:8000/v1`
+- Direct API calls: Replace `localhost:11434` with `localhost:8000`
 
-### Phase 1 (MVP - Current)
+**Available endpoints**:
+- `POST /v1/chat/completions` - OpenAI-compatible chat
+- `GET /v1/models` - List models (OpenAI format)
+- `POST /api/chat` - Ollama native chat
+- `POST /api/generate` - Ollama native generation
+- `GET /api/tags` - List models (Ollama format)
+- `GET /health` - Health check
+- `GET /metrics` - Performance metrics
 
-- **Hardware Detection**: Auto-detect GPU (NVIDIA/AMD/Apple), CPU, RAM
-- **Ollama Auto-Configuration**: Optimize VRAM usage, batch size, context window
-- **Benchmarking Suite**: Measure tokens/s, time-to-first-token, memory usage
-- **Speculative Decoding**: 1.5-2.5x speedup via draft model integration
+### Option 2: Use the CLI Tools
 
-### Phase 2 (Months 4-6)
+VeloLLM also provides CLI tools for hardware detection, benchmarking, and Ollama configuration:
 
-- **PagedAttention**: 70% reduction in KV cache fragmentation
-- **Continuous Batching**: Handle 4-8 concurrent users efficiently
-- **CPU-GPU Hybrid**: Intelligent layer placement and offloading
-- **Multi-Backend**: Support for llama.cpp, LocalAI, vLLM
+```bash
+# Detect your hardware (GPU, CPU, RAM)
+cargo run --bin velollm -- detect
 
-### Phase 3 (Months 7-12)
+# Benchmark Ollama performance
+cargo run --bin velollm -- benchmark --model llama3.2:3b
 
-- **GUI Dashboard**: Real-time performance monitoring
-- **IDE Integrations**: VSCode, Continue.dev, Cursor
-- **Mamba/MoE Support**: Next-generation model architectures
-- **Configuration Marketplace**: Community-driven optimization database
-
-See [ROADMAP.md](ROADMAP.md) for complete details.
-
----
-
-## Benchmark Results
-
-### Expected Performance (Phase 1 Targets)
-
-| Hardware | Model | Baseline | VeloLLM | Speedup |
-|----------|-------|----------|---------|---------|
-| RTX 4090 24GB | Llama 3.1 8B | ~28 tok/s | 60-70 tok/s | 2.1-2.5x |
-| RTX 3060 12GB | Llama 3.2 3B | ~35 tok/s | 70-85 tok/s | 2.0-2.4x |
-| M2 Max 32GB | Llama 3.1 8B | ~22 tok/s | 45-55 tok/s | 2.0-2.5x |
-
-See [BENCHMARKS.md](BENCHMARKS.md) for methodology and detailed results.
+# Generate optimized Ollama configuration
+cargo run --bin velollm -- optimize --dry-run
+cargo run --bin velollm -- optimize -o velollm-config.sh
+source velollm-config.sh
+```
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│         VeloLLM Orchestration Layer             │
-│  • Hardware detection                           │
-│  • Auto-configuration                           │
-│  • Performance profiling                        │
-└────┬──────────┬──────────┬──────────┬───────────┘
-     │          │          │          │
-┌────▼─────┐ ┌─▼──────┐ ┌─▼──────┐ ┌─▼──────┐
-│  Ollama  │ │llama.cpp│ │LocalAI │ │  vLLM  │
-│ Adapter  │ │ Adapter │ │ Adapter│ │ Adapter│
-└──────────┘ └─────────┘ └────────┘ └────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    YOUR APPLICATIONS                         │
+│      (Claude Code, Continue, Open WebUI, Custom Apps)       │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    VELOLLM PROXY                             │
+│                   localhost:8000                             │
+│                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   OpenAI     │  │    Tool      │  │   Request    │       │
+│  │   Compat     │  │   Optimizer  │  │   Batcher    │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   Semantic   │  │   Metrics    │  │   Streaming  │       │
+│  │   Cache      │  │   Collector  │  │   SSE        │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       OLLAMA                                 │
+│                   localhost:11434                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Core Technologies**:
-- **Backend**: Rust (performance-critical optimizations)
-- **CLI/Tooling**: TypeScript/Node.js (developer experience)
-- **Bindings**: Python (ML ecosystem compatibility)
+**Technology Stack**:
+- **Core**: Rust (ultra-low latency, memory safe)
+- **HTTP Server**: Axum + Tower (async, production-ready)
+- **Async Runtime**: Tokio
 
 ---
 
-## Development Status
+## Features
 
-**Current Phase**: Phase 1 - MVP Development (92% Complete)
+### Implemented (Phase 1-3)
 
-| Task | Status |
-|------|--------|
-| Repository setup | ✅ Complete |
-| Build system | ✅ Complete |
-| Hardware detection | ✅ Complete (NVIDIA, AMD, Apple, Intel) |
-| Benchmarking suite | ✅ Complete (Ollama API integration) |
-| Speculative decoding PoC | ✅ Complete (llama.cpp wrapper) |
-| Ollama optimization | ✅ Complete (`velollm optimize` command) |
-| Integration tests | ✅ Complete (39 tests passing) |
-| Documentation | 🚧 In Progress |
+**Hardware Detection & Optimization**:
+- Auto-detect GPU (NVIDIA, AMD, Apple Silicon, Intel)
+- CPU and memory profiling
+- Generate optimized Ollama environment variables
 
-Track progress: [TODO.md](TODO.md)
+**Benchmarking**:
+- Measure tokens/s, time-to-first-token, total latency
+- Multiple benchmark profiles (short, medium, code generation)
+- JSON export for comparison
+
+**Proxy Server**:
+- OpenAI API compatibility layer
+- Ollama native API pass-through
+- Server-Sent Events (SSE) streaming
+- Health checks and metrics endpoint
+
+**Internal Optimizations**:
+- PagedAttention block manager
+- Continuous batching scheduler
+- CUDA paged attention kernels (optional)
+
+### Coming Soon
+
+**Tool Calling Enhancement** (TASK-023):
+- Automatic JSON fixing for malformed responses
+- Tool call deduplication
+- Schema validation
+- Intelligent retry on parsing failures
+
+**Request Batching** (TASK-024):
+- Group concurrent requests
+- Maximize GPU utilization
+- Priority-based scheduling
+
+**Semantic Cache** (TASK-025):
+- Cache similar prompts
+- Embedding-based similarity matching
+- Reduce redundant inference
 
 ---
 
-## Contributing
+## Configuration
 
-We welcome contributions! VeloLLM is in early development and needs help with:
+### Environment Variables
 
-- **Core optimizations**: PagedAttention, speculative decoding
-- **Backend adapters**: Support for more inference engines
-- **Benchmarking**: Testing on diverse hardware configurations
-- **Documentation**: Guides, tutorials, API docs
+**Proxy Configuration**:
+- `VELOLLM_PORT`: Proxy listen port (default: 8000)
+- `OLLAMA_HOST`: Ollama backend URL (default: http://localhost:11434)
+- `VELOLLM_VERBOSE`: Enable verbose logging (default: false)
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+**Ollama Optimization** (generated by `velollm optimize`):
+- `OLLAMA_NUM_PARALLEL`: Concurrent request handling
+- `OLLAMA_NUM_GPU`: GPU layers to offload
+- `OLLAMA_NUM_BATCH`: Batch size for prompt processing
+- `OLLAMA_NUM_CTX`: Context window size
+- `OLLAMA_MAX_LOADED_MODELS`: Models to keep in memory
+- `OLLAMA_KEEP_ALIVE`: Model retention time
+
+---
+
+## Development
+
+### Building
+
+```bash
+cargo build              # Debug build
+cargo build --release    # Release build
+```
+
+### Testing
+
+```bash
+cargo test --all         # Run all tests
+cargo clippy --all       # Lint
+cargo fmt --all          # Format
+make ci                  # Full CI check
+```
+
+### Project Structure
+
+```
+velollm/
+├── velollm-core/       # Core library (hardware detection, optimization)
+├── velollm-cli/        # CLI binary (detect, benchmark, optimize)
+├── velollm-proxy/      # Proxy server binary
+├── velollm-benchmarks/ # Benchmarking library
+├── adapters/
+│   ├── ollama/         # Ollama configuration parser
+│   └── llamacpp/       # llama.cpp integration (PagedAttention, CUDA)
+└── benchmarks/
+    └── speculative/    # Speculative decoding experiments
+```
+
+---
+
+## Comparison
+
+| Feature | Ollama | vLLM | LM Studio | VeloLLM |
+|---------|--------|------|-----------|---------|
+| Target Use Case | Simplicity | Cloud production | Desktop GUI | Local performance |
+| OpenAI API Compat | Partial | Full | Partial | Full |
+| Tool Calling Fix | No | N/A | No | Yes |
+| PagedAttention | No | Yes | No | Yes (local) |
+| Request Batching | No | Yes | No | Yes |
+| Auto-optimization | No | No | Partial | Yes |
+| Language | Go | Python | Electron | Rust |
+| Open Source | Yes | Yes | No | Yes |
 
 ---
 
 ## Roadmap
 
-**Phase 1 (Months 1-3)**: MVP with 2-3x speedup
-- Speculative decoding integration
-- Ollama auto-configuration
-- Baseline benchmarking
+**Phase 1** (Complete): MVP with CLI tools
+- Hardware detection, benchmarking, Ollama configuration
 
-**Phase 2 (Months 4-6)**: Advanced optimizations (3-5x)
-- PagedAttention implementation
-- Continuous batching for local
-- Multi-backend support
+**Phase 2** (Complete): Advanced optimizations
+- PagedAttention, continuous batching scheduler, CUDA kernels
 
-**Phase 3 (Months 7-12)**: Ecosystem (5-10x)
-- GUI and monitoring
-- IDE integrations
-- Architecture alternatives (Mamba, MoE)
+**Phase 3** (In Progress): Intelligent proxy
+- OpenAI compatibility, tool calling enhancement, caching, metrics
 
-Full details: [ROADMAP.md](ROADMAP.md)
+**Phase 4** (Planned): Ecosystem
+- GUI dashboard, IDE integrations, configuration marketplace
+
+Full details: [ROADMAP.md](ROADMAP.md) | Task tracking: [TODO.md](TODO.md)
 
 ---
 
-## Why VeloLLM?
+## Contributing
 
-### Differentiation
+We welcome contributions! Areas of interest:
 
-| Feature | Ollama | vLLM | LM Studio | VeloLLM |
-|---------|--------|------|-----------|---------|
-| Target | Simplicity | Cloud prod | Desktop users | Local performance |
-| Speculative Decoding | ❌ | ❌ | ✅ | ✅ Auto-configured |
-| PagedAttention | ❌ | ✅ | ❌ | ✅ Local-adapted |
-| Continuous Batching | ❌ | ✅ | ❌ | ✅ Multi-user |
-| Auto-optimization | ❌ | ❌ | Partial | ✅ Hardware-aware |
-| Open Source | ✅ | ✅ | ❌ | ✅ |
+- **Performance**: Optimize the proxy, reduce latency
+- **Tool Calling**: Improve JSON fixing, add more edge cases
+- **Caching**: Implement semantic cache with embeddings
+- **Testing**: Add integration tests, benchmark on diverse hardware
+- **Documentation**: Improve guides and API docs
 
-### Value Proposition
-
-**VeloLLM = "Autopilot for Local AI Inference"**
-
-1. **Zero-config**: Detects hardware, applies optimal settings automatically
-2. **Hardware-aware**: Adapts dynamically (laptop vs workstation vs server)
-3. **Multi-backend**: Works with Ollama, llama.cpp, LocalAI transparently
-4. **Transparent**: Detailed monitoring, metrics, optimization explanations
-5. **Community-driven**: Open source, extensible, well-documented
-
----
-
-## Research & References
-
-This project builds on:
-
-- [llama.cpp](https://github.com/ggml-org/llama.cpp): Foundation for speculative decoding
-- [vLLM](https://github.com/vllm-project/vllm): PagedAttention and continuous batching
-- [Ollama](https://github.com/ollama/ollama): User experience and API design
-- [Mamba](https://github.com/state-spaces/mamba): Alternative architecture exploration
-
-Key papers:
-- [PagedAttention](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html): Memory optimization
-- [Speculative Decoding](https://arxiv.org/abs/2211.17192): Inference acceleration
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
@@ -215,14 +280,14 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-## Contact
+## Links
 
+- **Repository**: [github.com/ArthurDEV44/velollm](https://github.com/ArthurDEV44/velollm)
 - **Issues**: [GitHub Issues](https://github.com/ArthurDEV44/velollm/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ArthurDEV44/velollm/discussions)
-- **Repository**: [github.com/ArthurDEV44/velollm](https://github.com/ArthurDEV44/velollm)
 
 ---
 
-**Status**: 🚧 Early development - Phase 1 MVP in progress
+**Status**: Phase 3 - Proxy development in progress
 
-Built with ❤️ by the VeloLLM community.
+Built with Rust by the VeloLLM community.

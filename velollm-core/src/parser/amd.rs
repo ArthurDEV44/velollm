@@ -22,11 +22,7 @@ impl RocmSmiParser {
         let vram_total_mb = Self::parse_vram_total(output).unwrap_or(0);
         let vram_free_mb = Self::parse_vram_free(output);
 
-        Some(AmdGpuInfo {
-            name,
-            vram_total_mb,
-            vram_free_mb,
-        })
+        Some(AmdGpuInfo { name, vram_total_mb, vram_free_mb })
     }
 
     /// Parse card series name from rocm-smi output
@@ -119,9 +115,8 @@ impl RocmSmiParser {
         // Skip GTT memory, get first VRAM-like match
         for line in output.lines() {
             if line.contains(field) && !line.contains("GTT") {
-                static BYTES_REGEX: Lazy<Regex> = Lazy::new(|| {
-                    Regex::new(r"\(B\)[:\s]+(\d+)").expect("Invalid bytes regex")
-                });
+                static BYTES_REGEX: Lazy<Regex> =
+                    Lazy::new(|| Regex::new(r"\(B\)[:\s]+(\d+)").expect("Invalid bytes regex"));
 
                 if let Some(caps) = BYTES_REGEX.captures(line) {
                     if let Some(value) = caps.get(1).and_then(|m| m.as_str().parse().ok()) {
@@ -182,10 +177,7 @@ Free: 7500 MB
     #[test]
     fn test_parse_full_output() {
         let info = RocmSmiParser::parse(ROCM_SMI_OUTPUT_FULL).unwrap();
-        assert_eq!(
-            info.name,
-            "Navi 21 [Radeon RX 6800/6800 XT / 6900 XT]"
-        );
+        assert_eq!(info.name, "Navi 21 [Radeon RX 6800/6800 XT / 6900 XT]");
         // 17179869184 bytes = 16384 MB
         assert_eq!(info.vram_total_mb, 16384);
         // 17179869184 - 1073741824 = 16106127360 bytes = 15360 MB
@@ -233,18 +225,12 @@ Free: 7500 MB
 
     #[test]
     fn test_parse_vram_total_bytes() {
-        assert_eq!(
-            RocmSmiParser::parse_vram_total(ROCM_SMI_OUTPUT_FULL),
-            Some(16384)
-        );
+        assert_eq!(RocmSmiParser::parse_vram_total(ROCM_SMI_OUTPUT_FULL), Some(16384));
     }
 
     #[test]
     fn test_parse_vram_free() {
-        assert_eq!(
-            RocmSmiParser::parse_vram_free(ROCM_SMI_OUTPUT_FULL),
-            Some(15360)
-        );
+        assert_eq!(RocmSmiParser::parse_vram_free(ROCM_SMI_OUTPUT_FULL), Some(15360));
     }
 
     #[test]

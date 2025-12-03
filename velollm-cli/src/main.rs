@@ -78,7 +78,11 @@ fn init_tracing(verbose: u8, quiet: bool) {
         .add_directive("reqwest=warn".parse().unwrap());
 
     tracing_subscriber::registry()
-        .with(fmt::layer().with_target(verbose >= 2).with_thread_ids(verbose >= 3))
+        .with(
+            fmt::layer()
+                .with_target(verbose >= 2)
+                .with_thread_ids(verbose >= 3),
+        )
         .with(filter)
         .init();
 
@@ -93,7 +97,9 @@ async fn main() -> anyhow::Result<()> {
 
     let result = match cli.command {
         Commands::Detect { json } => run_detect(json).await,
-        Commands::Benchmark { backend, model, output } => run_benchmark(&backend, &model, output).await,
+        Commands::Benchmark { backend, model, output } => {
+            run_benchmark(&backend, &model, output).await
+        }
         Commands::Optimize { dry_run, output } => run_optimize(dry_run, output).await,
     };
 
@@ -156,11 +162,7 @@ async fn run_detect(json_only: bool) -> anyhow::Result<()> {
         hw.memory.available_mb,
         hw.memory.available_mb as f64 / 1024.0
     );
-    println!(
-        "Used: {} MB ({:.1} GB)",
-        hw.memory.used_mb,
-        hw.memory.used_mb as f64 / 1024.0
-    );
+    println!("Used: {} MB ({:.1} GB)", hw.memory.used_mb, hw.memory.used_mb as f64 / 1024.0);
     println!();
 
     if let Some(ref gpu) = hw.gpu {
@@ -283,7 +285,10 @@ async fn run_benchmark(backend: &str, model: &str, output: Option<String>) -> an
     if !results.is_empty() {
         let avg_tps: f64 =
             results.iter().map(|r| r.tokens_per_second).sum::<f64>() / results.len() as f64;
-        let avg_ttft: f64 = results.iter().map(|r| r.time_to_first_token_ms).sum::<f64>()
+        let avg_ttft: f64 = results
+            .iter()
+            .map(|r| r.time_to_first_token_ms)
+            .sum::<f64>()
             / results.len() as f64;
 
         info!(
@@ -332,11 +337,7 @@ async fn run_optimize(dry_run: bool, output: Option<String>) -> anyhow::Result<(
 
     println!("Hardware detected:");
     if let Some(ref gpu) = hw.gpu {
-        println!(
-            "  GPU: {} ({:.1} GB VRAM)",
-            gpu.name,
-            gpu.vram_total_mb as f64 / 1024.0
-        );
+        println!("  GPU: {} ({:.1} GB VRAM)", gpu.name, gpu.vram_total_mb as f64 / 1024.0);
     } else {
         println!("  GPU: None (CPU-only mode)");
     }
@@ -396,30 +397,15 @@ async fn run_optimize(dry_run: bool, output: Option<String>) -> anyhow::Result<(
 
     // Step 5: Show recommended configuration
     println!("Recommended Ollama configuration:\n");
-    println!(
-        "  OLLAMA_NUM_PARALLEL: {} (concurrent requests)",
-        optimized.num_parallel
-    );
-    println!(
-        "  OLLAMA_NUM_GPU: {} (GPU layers to offload)",
-        optimized.num_gpu
-    );
-    println!(
-        "  OLLAMA_NUM_BATCH: {} (batch size for prompt processing)",
-        optimized.num_batch
-    );
-    println!(
-        "  OLLAMA_NUM_CTX: {} (context window size)",
-        optimized.num_ctx
-    );
+    println!("  OLLAMA_NUM_PARALLEL: {} (concurrent requests)", optimized.num_parallel);
+    println!("  OLLAMA_NUM_GPU: {} (GPU layers to offload)", optimized.num_gpu);
+    println!("  OLLAMA_NUM_BATCH: {} (batch size for prompt processing)", optimized.num_batch);
+    println!("  OLLAMA_NUM_CTX: {} (context window size)", optimized.num_ctx);
     println!(
         "  OLLAMA_MAX_LOADED_MODELS: {} (models to keep in memory)",
         optimized.max_loaded_models
     );
-    println!(
-        "  OLLAMA_KEEP_ALIVE: \"{}\" (model retention time)",
-        optimized.keep_alive
-    );
+    println!("  OLLAMA_KEEP_ALIVE: \"{}\" (model retention time)", optimized.keep_alive);
     if let Some(threads) = optimized.num_thread {
         println!("  OLLAMA_NUM_THREAD: {} (CPU threads)", threads);
     }
@@ -444,10 +430,7 @@ async fn run_optimize(dry_run: bool, output: Option<String>) -> anyhow::Result<(
         println!("\nTo apply these settings:");
         println!("   source {}", path);
         println!("\nAdd to your shell profile for persistence:");
-        println!(
-            "   echo 'source {}' >> ~/.bashrc",
-            std::fs::canonicalize(&path)?.display()
-        );
+        println!("   echo 'source {}' >> ~/.bashrc", std::fs::canonicalize(&path)?.display());
     } else {
         println!("Shell configuration:\n");
         println!("{}", script);
@@ -480,7 +463,10 @@ fn ollama_to_optimized_config(ollama: &OllamaConfig) -> OptimizedConfig {
     OptimizedConfig {
         num_parallel: ollama.num_parallel.unwrap_or(1),
         max_loaded_models: ollama.max_loaded_models.unwrap_or(1),
-        keep_alive: ollama.keep_alive.clone().unwrap_or_else(|| "5m".to_string()),
+        keep_alive: ollama
+            .keep_alive
+            .clone()
+            .unwrap_or_else(|| "5m".to_string()),
         num_ctx: ollama.num_ctx.unwrap_or(2048),
         num_batch: ollama.num_batch.unwrap_or(512),
         num_gpu: ollama.num_gpu.unwrap_or(-1),

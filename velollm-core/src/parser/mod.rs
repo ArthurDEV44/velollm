@@ -8,13 +8,13 @@
 //! All parsers are designed to be resilient to format variations and
 //! provide sensible defaults when parsing fails.
 
-pub mod nvidia;
 pub mod amd;
 pub mod llama;
+pub mod nvidia;
 
-pub use nvidia::NvidiaSmiParser;
 pub use amd::RocmSmiParser;
 pub use llama::LlamaCppParser;
+pub use nvidia::NvidiaSmiParser;
 
 /// Result of parsing GPU memory information
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -133,30 +133,15 @@ mod tests {
 
     #[test]
     fn test_apple_chip_detection() {
-        assert_eq!(
-            AppleChip::from_output("Chip: Apple M1"),
-            Some(AppleChip::M1)
-        );
-        assert_eq!(
-            AppleChip::from_output("Chip: Apple M2 Pro"),
-            Some(AppleChip::M2Pro)
-        );
-        assert_eq!(
-            AppleChip::from_output("Chip: Apple M3 Max"),
-            Some(AppleChip::M3Max)
-        );
-        assert_eq!(
-            AppleChip::from_output("Intel Core i9"),
-            None
-        );
+        assert_eq!(AppleChip::from_output("Chip: Apple M1"), Some(AppleChip::M1));
+        assert_eq!(AppleChip::from_output("Chip: Apple M2 Pro"), Some(AppleChip::M2Pro));
+        assert_eq!(AppleChip::from_output("Chip: Apple M3 Max"), Some(AppleChip::M3Max));
+        assert_eq!(AppleChip::from_output("Intel Core i9"), None);
     }
 
     #[test]
     fn test_apple_chip_display_name() {
         assert_eq!(AppleChip::M3Pro.display_name(), "Apple M3 Pro");
-        assert_eq!(
-            AppleChip::Unknown("M5".to_string()).display_name(),
-            "Apple M5"
-        );
+        assert_eq!(AppleChip::Unknown("M5".to_string()).display_name(), "Apple M5");
     }
 }

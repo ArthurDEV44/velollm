@@ -52,17 +52,11 @@ pub enum HardwareError {
 
     /// Command execution failed
     #[error("command '{command}' failed: {message}")]
-    CommandFailed {
-        command: String,
-        message: String,
-    },
+    CommandFailed { command: String, message: String },
 
     /// Parsing error when reading hardware info
     #[error("failed to parse {location}: {message}")]
-    ParseError {
-        location: String,
-        message: String,
-    },
+    ParseError { location: String, message: String },
 
     /// System information unavailable
     #[error("system information unavailable: {0}")]
@@ -87,18 +81,12 @@ impl HardwareError {
 
     /// Create a command failure error
     pub fn command(cmd: impl Into<String>, msg: impl Into<String>) -> Self {
-        Self::CommandFailed {
-            command: cmd.into(),
-            message: msg.into(),
-        }
+        Self::CommandFailed { command: cmd.into(), message: msg.into() }
     }
 
     /// Create a parse error
     pub fn parse(location: impl Into<String>, msg: impl Into<String>) -> Self {
-        Self::ParseError {
-            location: location.into(),
-            message: msg.into(),
-        }
+        Self::ParseError { location: location.into(), message: msg.into() }
     }
 }
 

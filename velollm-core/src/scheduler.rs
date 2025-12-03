@@ -197,7 +197,8 @@ impl Request {
 
     /// Get the number of remaining tokens to generate
     pub fn remaining_tokens(&self) -> usize {
-        self.max_new_tokens.saturating_sub(self.generated_tokens.len() as u32) as usize
+        self.max_new_tokens
+            .saturating_sub(self.generated_tokens.len() as u32) as usize
     }
 
     /// Check if the request has finished generation
@@ -411,7 +412,11 @@ impl Scheduler {
             match self.block_manager.create_sequence() {
                 Ok(seq_id) => {
                     // Allocate blocks for prompt
-                    if self.block_manager.append_tokens(seq_id, request.prompt_tokens.len()).is_err() {
+                    if self
+                        .block_manager
+                        .append_tokens(seq_id, request.prompt_tokens.len())
+                        .is_err()
+                    {
                         // Cleanup and skip
                         let _ = self.block_manager.remove_sequence(seq_id);
                         self.waiting_queue.push_front(request);
@@ -899,10 +904,7 @@ mod tests {
         assert!(!output.has_work());
         assert_eq!(output.num_sequences(), 0);
 
-        let output = SchedulerOutput {
-            running_sequences: vec![1, 2, 3],
-            ..Default::default()
-        };
+        let output = SchedulerOutput { running_sequences: vec![1, 2, 3], ..Default::default() };
         assert!(output.has_work());
         assert_eq!(output.num_sequences(), 3);
     }

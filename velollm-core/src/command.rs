@@ -114,11 +114,7 @@ pub fn run_with_timeout(cmd: &mut Command, timeout: Duration) -> CommandResult {
                 })
                 .unwrap_or_default();
 
-            CommandResult::Success(Output {
-                status,
-                stdout,
-                stderr,
-            })
+            CommandResult::Success(Output { status, stdout, stderr })
         }
         Ok(None) => {
             // Timeout - kill the process
