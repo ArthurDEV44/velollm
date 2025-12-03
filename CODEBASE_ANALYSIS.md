@@ -44,7 +44,7 @@ Le codebase VeloLLM est **globalement bien structuré** avec une architecture mo
 | Tests | ⭐⭐⭐⭐ | Couverture complète, tests bien écrits |
 | Documentation | ⭐⭐⭐⭐ | Bons doc comments, diagrammes ASCII |
 | Performance | ⭐⭐⭐ | Améliorations possibles (voir section dédiée) |
-| Error Handling | ⭐⭐⭐ | Mixte - peut être unifié |
+| Error Handling | ⭐⭐⭐⭐ | ✅ Unifié avec thiserror/anyhow |
 | Logging | ⭐⭐⭐⭐ | ✅ Implémenté avec `tracing` |
 | Robustesse | ⭐⭐⭐ | Parsing fragile, validation partielle |
 
@@ -160,40 +160,46 @@ RUST_LOG=debug velollm detect
 
 ---
 
-### P1 - Unification Error Handling (Impact: Élevé)
+### ✅ P1 - Unification Error Handling (Impact: Élevé) - COMPLÉTÉ
 
-**Problème**: Mix incohérent entre `anyhow`, `thiserror`, et types d'erreur custom.
+> **Statut**: ✅ Implémenté le 2025-12-03
 
-**Situation actuelle**:
+**Implémentation réalisée**:
+- Création de `velollm-core/src/error.rs` avec `HardwareError` structuré
+- Conversion de `SchedulerError` vers `thiserror` (était manuel)
+- Mise à jour de `hardware.rs` pour utiliser `Result<T, HardwareError>`
+- Ajout de validation dans `detect_cpu()` et `detect_memory()`
+- Re-export des types d'erreur dans `lib.rs`
+
+**Architecture finale**:
 | Crate | Approche |
 |-------|----------|
-| velollm-core | `thiserror` (PagedAttentionError, SchedulerError) |
-| velollm-cli | `anyhow::Result` |
+| velollm-core | `thiserror` (HardwareError, PagedAttentionError, SchedulerError) |
+| velollm-cli | `anyhow::Result` (convertit automatiquement les erreurs core) |
 | velollm-benchmarks | `anyhow::Result` |
-| adapters | Mix des deux |
+| adapters | `thiserror` (KvCacheError, CudaPagedError) |
 
-**Solution recommandée**:
-
-1. **Libraries (core, adapters)**: Utiliser `thiserror` exclusivement
-2. **Applications (cli, benchmarks)**: Utiliser `anyhow` avec contexte
-
+**Types d'erreur disponibles**:
 ```rust
-// velollm-core/src/error.rs (nouveau fichier)
-use thiserror::Error;
+// velollm-core/src/error.rs
+use velollm_core::HardwareError;
 
-#[derive(Error, Debug)]
-pub enum VeloLLMError {
-    #[error("Hardware detection failed: {0}")]
-    HardwareDetection(String),
+pub enum HardwareError {
+    GpuDetection(String),
+    CpuDetection(String),
+    MemoryDetection(String),
+    CommandFailed { command: String, message: String },
+    ParseError { location: String, message: String },
+    SystemInfoUnavailable(String),
+}
 
-    #[error("Paged attention error: {0}")]
-    PagedAttention(#[from] PagedAttentionError),
-
-    #[error("Scheduler error: {0}")]
-    Scheduler(#[from] SchedulerError),
-
-    #[error("Configuration error: {0}")]
-    Config(String),
+// velollm-core/src/scheduler.rs (utilise thiserror)
+pub enum SchedulerError {
+    QueueFull,
+    RequestNotFound(u64),
+    SequenceNotFound(u64),
+    OutOfMemory,
+    InvalidState { from: RequestState, to: RequestState },
 }
 ```
 
@@ -612,7 +618,7 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 | ID | Tâche | Effort | Impact |
 |----|-------|--------|--------|
 | P1-1 | ✅ Ajouter tracing/logging structuré | ~~4h~~ | ✅ Complété |
-| P1-2 | Unifier error handling | 6h | Élevé |
+| P1-2 | ✅ Unifier error handling | ~~6h~~ | ✅ Complété |
 | C1 | Supprimer champ dupliqué ollama_num_gpu | 15min | Faible |
 | C2 | Standardiser messages d'erreur | 1h | Faible |
 
@@ -662,6 +668,8 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 
 Le codebase VeloLLM est sur de bonnes bases avec une architecture solide et une implémentation fidèle des patterns d'optimisation LLM modernes. Les améliorations prioritaires (logging, error handling, robustesse parsing) augmenteront significativement la qualité de production. Les optimisations de performance (priority queue, LIFO allocation) apporteront des gains mesurables à haute charge.
 
-**Prochaine étape recommandée**: Unifier l'error handling (P1-2) en migrant vers des types d'erreurs structurés avec `thiserror` pour une meilleure gestion des erreurs à travers les crates.
+**Prochaine étape recommandée**: Robustifier le parsing (P1-3) en utilisant des regex avec fallbacks pour les sorties de nvidia-smi, rocm-smi, et llama.cpp.
 
 > ✅ **P1-1 complété** (2025-12-03): Logging structuré implémenté avec `tracing` dans tous les crates (CLI, core, benchmarks).
+
+> ✅ **P1-2 complété** (2025-12-03): Error handling unifié avec `thiserror` pour les libraries et `anyhow` pour les applications. Nouveau module `error.rs` avec `HardwareError`, `SchedulerError` converti vers thiserror.

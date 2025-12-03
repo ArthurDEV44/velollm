@@ -53,6 +53,7 @@ use std::collections::{HashMap, VecDeque};
 use std::time::Instant;
 
 use crate::paged_attention::{BlockManager, BlockManagerConfig, PagedAttentionError};
+use thiserror::Error;
 
 /// Configuration for the scheduler
 #[derive(Debug, Clone)]
@@ -245,35 +246,31 @@ impl SchedulerOutput {
 }
 
 /// Errors that can occur during scheduling
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Error, Debug, Clone, PartialEq)]
 pub enum SchedulerError {
     /// Request queue is full
+    #[error("Request queue is full")]
     QueueFull,
+
     /// Request not found
+    #[error("Request {0} not found")]
     RequestNotFound(u64),
+
     /// Sequence not found
+    #[error("Sequence {0} not found")]
     SequenceNotFound(u64),
+
     /// Memory allocation failed
+    #[error("Out of memory: cannot allocate blocks")]
     OutOfMemory,
+
     /// Invalid state transition
-    InvalidState { from: RequestState, to: RequestState },
+    #[error("Invalid state transition from {from} to {to}")]
+    InvalidState {
+        from: RequestState,
+        to: RequestState,
+    },
 }
-
-impl std::fmt::Display for SchedulerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SchedulerError::QueueFull => write!(f, "Request queue is full"),
-            SchedulerError::RequestNotFound(id) => write!(f, "Request {} not found", id),
-            SchedulerError::SequenceNotFound(id) => write!(f, "Sequence {} not found", id),
-            SchedulerError::OutOfMemory => write!(f, "Out of memory"),
-            SchedulerError::InvalidState { from, to } => {
-                write!(f, "Invalid state transition from {} to {}", from, to)
-            }
-        }
-    }
-}
-
-impl std::error::Error for SchedulerError {}
 
 impl From<PagedAttentionError> for SchedulerError {
     fn from(err: PagedAttentionError) -> Self {

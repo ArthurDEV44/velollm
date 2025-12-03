@@ -2,6 +2,7 @@
 //
 // Detects GPU (NVIDIA/AMD/Apple), CPU, RAM, and OS information
 
+use crate::error::HardwareError;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use sysinfo::System;
@@ -52,8 +53,13 @@ pub struct MemoryInfo {
 
 impl HardwareSpec {
     /// Detect current hardware configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns `HardwareError` if CPU or memory detection fails.
+    /// GPU detection failures are handled gracefully (returns `None`).
     #[instrument(skip_all)]
-    pub fn detect() -> anyhow::Result<Self> {
+    pub fn detect() -> Result<Self, HardwareError> {
         debug!("Starting hardware detection");
 
         let gpu = detect_gpu();
@@ -322,7 +328,7 @@ fn detect_intel_gpu() -> Option<GpuInfo> {
 }
 
 /// Detect CPU information
-fn detect_cpu() -> anyhow::Result<CpuInfo> {
+fn detect_cpu() -> Result<CpuInfo, HardwareError> {
     trace!("Detecting CPU information");
 
     let mut sys = System::new_all();
@@ -336,6 +342,11 @@ fn detect_cpu() -> anyhow::Result<CpuInfo> {
     let cores = num_cpus::get_physical() as u32;
     let threads = num_cpus::get() as u32;
     let frequency = sys.cpus().first().map(|cpu| cpu.frequency()).unwrap_or(0);
+
+    // Validate that we got meaningful CPU info
+    if cores == 0 {
+        return Err(HardwareError::cpu("Failed to detect CPU core count"));
+    }
 
     let info = CpuInfo {
         model: if cpu_name.is_empty() { "Unknown CPU".to_string() } else { cpu_name },
@@ -356,7 +367,7 @@ fn detect_cpu() -> anyhow::Result<CpuInfo> {
 }
 
 /// Detect memory information
-fn detect_memory() -> anyhow::Result<MemoryInfo> {
+fn detect_memory() -> Result<MemoryInfo, HardwareError> {
     trace!("Detecting memory information");
 
     let mut sys = System::new_all();
@@ -366,6 +377,11 @@ fn detect_memory() -> anyhow::Result<MemoryInfo> {
     let total = sys.total_memory() / (1024 * 1024); // Bytes to MB
     let available = sys.available_memory() / (1024 * 1024);
     let used = sys.used_memory() / (1024 * 1024);
+
+    // Validate that we got meaningful memory info
+    if total == 0 {
+        return Err(HardwareError::memory("Failed to detect total memory"));
+    }
 
     let info = MemoryInfo { total_mb: total, available_mb: available, used_mb: used };
 
