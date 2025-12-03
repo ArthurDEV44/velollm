@@ -31,13 +31,14 @@ pub async fn health(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     }
 }
 
-/// Metrics endpoint with proxy and batcher statistics
+/// Metrics endpoint with proxy, batcher, and cache statistics
 ///
 /// GET /metrics
 pub async fn metrics(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let stats = state.stats.lock().await;
     let batcher_snapshot = state.batcher_metrics.snapshot();
     let queue_depth = state.request_queue.queue_depth().await;
+    let cache_stats = state.response_cache.stats();
 
     Json(json!({
         "proxy": {
@@ -45,9 +46,7 @@ pub async fn metrics(State(state): State<Arc<AppState>>) -> impl IntoResponse {
             "requests_success": stats.requests_success,
             "requests_failed": stats.requests_failed,
             "tokens_generated": stats.tokens_generated,
-            "avg_tokens_per_second": stats.avg_tokens_per_second(),
-            "cache_hits": stats.cache_hits,
-            "cache_misses": stats.cache_misses
+            "avg_tokens_per_second": stats.avg_tokens_per_second()
         },
         "batcher": {
             "config": {
@@ -71,6 +70,32 @@ pub async fn metrics(State(state): State<Arc<AppState>>) -> impl IntoResponse {
                 "avg_queue_wait_ms": batcher_snapshot.avg_queue_wait_ms,
                 "avg_processing_ms": batcher_snapshot.avg_processing_ms,
                 "avg_batch_size": batcher_snapshot.avg_batch_size
+            }
+        },
+        "cache": {
+            "config": {
+                "exact_cache_size": state.cache_config.exact_cache_size,
+                "exact_cache_ttl_secs": state.cache_config.exact_cache_ttl.as_secs(),
+                "semantic_cache_enabled": state.cache_config.semantic_cache_enabled,
+                "similarity_threshold": state.cache_config.similarity_threshold
+            },
+            "hits": {
+                "exact": cache_stats.exact_hits,
+                "semantic": cache_stats.semantic_hits
+            },
+            "misses": {
+                "exact": cache_stats.exact_misses,
+                "semantic": cache_stats.semantic_misses
+            },
+            "performance": {
+                "hit_rate": cache_stats.hit_rate,
+                "exact_hit_rate": cache_stats.exact_hit_rate,
+                "semantic_hit_rate": cache_stats.semantic_hit_rate
+            },
+            "operations": {
+                "puts": cache_stats.puts,
+                "evictions": cache_stats.evictions,
+                "expirations": cache_stats.expirations
             }
         }
     }))

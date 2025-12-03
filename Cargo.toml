@@ -75,6 +75,13 @@ uuid = { version = "1.0", features = ["v4"] }
 # JSON Schema validation (for tool calling)
 jsonschema = "0.27"
 
+# Caching
+lru = "0.12"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+# Embeddings (for semantic cache)
+fastembed = "4"
+
 [profile.release]
 opt-level = 3
 lto = "thin"

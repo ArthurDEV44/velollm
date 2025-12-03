@@ -43,8 +43,19 @@ jsonschema = { workspace = true }
 # Regex for JSON repair
 regex = { workspace = true }
 
+# Caching
+lru = { workspace = true }
+xxhash-rust = { workspace = true }
+
+# Embeddings (for semantic cache)
+fastembed = { workspace = true, optional = true }
+
 # Internal crates
 velollm-core = { path = "../velollm-core" }
+
+[features]
+default = []
+semantic-cache = ["fastembed"]
 
 [dev-dependencies]
 tokio-test = "0.4"

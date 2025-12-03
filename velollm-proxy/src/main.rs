@@ -48,6 +48,7 @@ use tracing::{info, warn};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod batcher;
+mod cache;
 mod convert;
 mod error;
 mod optimizer;
@@ -152,6 +153,23 @@ async fn main() -> anyhow::Result<()> {
             "disabled"
         }
     );
+    println!();
+    println!("  Cache configuration:");
+    println!(
+        "    Exact cache: {} entries, TTL {}s",
+        state.cache_config.exact_cache_size,
+        state.cache_config.exact_cache_ttl.as_secs()
+    );
+    #[cfg(feature = "semantic-cache")]
+    if state.cache_config.semantic_cache_enabled {
+        println!(
+            "    Semantic cache: {} entries, threshold {:.0}%",
+            state.cache_config.semantic_cache_size,
+            state.cache_config.similarity_threshold * 100.0
+        );
+    }
+    #[cfg(not(feature = "semantic-cache"))]
+    println!("    Semantic cache: disabled (enable with --features semantic-cache)");
     println!();
     println!("  Endpoints:");
     println!("    OpenAI: POST /v1/chat/completions");

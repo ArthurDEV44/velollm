@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use crate::batcher::{BatcherConfig, BatcherMetrics, RequestQueue};
+use crate::cache::{CacheConfig, ResponseCache};
 use crate::optimizer::ToolOptimizer;
 use crate::proxy::OllamaProxy;
 use crate::types::openai::ChatCompletionRequest;
@@ -25,6 +26,12 @@ pub struct AppState {
     /// Batcher configuration
     pub batcher_config: BatcherConfig,
 
+    /// Response cache (exact + semantic)
+    pub response_cache: ResponseCache,
+
+    /// Cache configuration
+    pub cache_config: CacheConfig,
+
     /// Runtime statistics
     pub stats: Mutex<ProxyStats>,
 
@@ -33,15 +40,24 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Create new application state with default batcher configuration
+    /// Create new application state with default configurations
     pub fn new(config: ProxyConfig) -> Self {
-        Self::with_batcher_config(config, BatcherConfig::from_env())
+        Self::with_configs(
+            config,
+            BatcherConfig::from_env(),
+            CacheConfig::from_env(),
+        )
     }
 
-    /// Create new application state with custom batcher configuration
-    pub fn with_batcher_config(config: ProxyConfig, batcher_config: BatcherConfig) -> Self {
+    /// Create new application state with custom configurations
+    pub fn with_configs(
+        config: ProxyConfig,
+        batcher_config: BatcherConfig,
+        cache_config: CacheConfig,
+    ) -> Self {
         let batcher_metrics = Arc::new(BatcherMetrics::new());
         let request_queue = RequestQueue::new(batcher_config.clone(), batcher_metrics.clone());
+        let response_cache = ResponseCache::new(cache_config.clone());
 
         Self {
             proxy: OllamaProxy::new(&config.ollama_url),
@@ -49,6 +65,8 @@ impl AppState {
             request_queue,
             batcher_metrics,
             batcher_config,
+            response_cache,
+            cache_config,
             stats: Mutex::new(ProxyStats::default()),
             config,
         }
