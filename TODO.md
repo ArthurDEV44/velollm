@@ -474,11 +474,11 @@ Voir [TODO_MVP.md](TODO_MVP.md) pour les détails.
 - [x] TASK-015: llama.cpp paged KV cache integration ✅
 - [x] TASK-016: CUDA paged attention kernel ✅
 - [x] TASK-017: Continuous batching scheduler ✅
-- [ ] TASK-018: LocalAI adapter
-- [ ] TASK-019: vLLM adapter
+- [ ] TASK-018: LocalAI adapter ⏸️ **STANDBY** (focus on Ollama/llama.cpp first)
+- [ ] TASK-019: vLLM adapter ⏸️ **STANDBY** (focus on Ollama/llama.cpp first)
 - [ ] TASK-020: Performance profiler
 
-**Progress**: 5/8 tasks (62.5%)
+**Progress**: 5/6 active tasks (83.3%) - 2 tasks on standby
 
 **Tests Status**:
 - velollm-core: 63/63 tests passing ✅ (+15 scheduler tests)
@@ -549,4 +549,4 @@ cargo doc --open
 
 ---
 
-**Next task: TASK-018 (LocalAI Adapter) 🚀**
+**Next task: TASK-020 (Performance Profiler) 🚀**
