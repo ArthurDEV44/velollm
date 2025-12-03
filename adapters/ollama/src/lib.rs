@@ -55,10 +55,6 @@ pub struct OllamaConfig {
     /// Disable flash attention
     /// Default: false
     pub ollama_flash_attention: Option<bool>,
-
-    /// Number of GPU layers (alternative to num_gpu)
-    /// Default: auto-detect
-    pub ollama_num_gpu: Option<i32>,
 }
 
 impl OllamaConfig {
@@ -94,7 +90,6 @@ impl OllamaConfig {
             ollama_flash_attention: env::var("OLLAMA_FLASH_ATTENTION")
                 .ok()
                 .map(|s| s == "1" || s.to_lowercase() == "true"),
-            ollama_num_gpu: env::var("OLLAMA_NUM_GPU").ok().and_then(|s| s.parse().ok()),
         }
     }
 

@@ -472,7 +472,6 @@ fn optimized_config_to_ollama(optimized: &OptimizedConfig) -> OllamaConfig {
         ollama_models: None,
         ollama_debug: None,
         ollama_flash_attention: None,
-        ollama_num_gpu: Some(optimized.num_gpu),
     }
 }
 

@@ -2,6 +2,7 @@
 //
 // Core functionality for hardware detection, optimization, and performance monitoring
 
+pub mod command;
 pub mod error;
 pub mod hardware;
 pub mod optimizer;

@@ -30,10 +30,10 @@ Le codebase VeloLLM est **globalement bien structuré** avec une architecture mo
 | Métrique | Valeur |
 |----------|--------|
 | Crates | 6 |
-| Lignes de code Rust | ~6,000 |
+| Lignes de code Rust | ~6,200 |
 | Lignes de code CUDA | ~500 |
-| Tests unitaires | 131 |
-| Doc tests | 8 |
+| Tests unitaires | 152 |
+| Doc tests | 7 |
 | Couverture modules | 100% |
 
 ### Score Global par Domaine
@@ -514,27 +514,22 @@ pub fn generate_report(current: &OllamaConfig, recommended: &OptimizedConfig) ->
 
 ## Nettoyage de Code
 
-### C1 - Supprimer Code Dupliqué
+### ✅ C1 - Supprimer Code Dupliqué - COMPLÉTÉ
 
-**Fichier**: `adapters/ollama/src/lib.rs`
+> **Statut**: ✅ Implémenté le 2025-12-03
 
-```rust
-// Champs dupliqués
-pub num_gpu: Option<String>,       // ligne 37
-pub ollama_num_gpu: Option<String>, // ligne 61 - SUPPRIMER
-```
+Suppression du champ dupliqué `ollama_num_gpu` dans `adapters/ollama/src/lib.rs`.
 
-### C2 - Unifier Format des Messages d'Erreur
+### ✅ C2 - Unifier Format des Messages d'Erreur - COMPLÉTÉ
 
-**Convention recommandée** (minuscules, sans ponctuation finale):
+> **Statut**: ✅ Implémenté le 2025-12-03
 
-```rust
-// Avant
-#[error("Out of memory: no free blocks available")]
-
-// Après
-#[error("out of memory: no free blocks available")]
-```
+Tous les messages d'erreur `#[error(...)]` sont maintenant en minuscules:
+- `velollm-core/src/error.rs`
+- `velollm-core/src/paged_attention/mod.rs`
+- `velollm-core/src/scheduler.rs`
+- `adapters/llamacpp/src/kv_cache.rs`
+- `adapters/llamacpp/src/cuda_paged.rs`
 
 ### C3 - Supprimer Imports Inutilisés
 
@@ -555,19 +550,26 @@ fn test_schedule_multiple_requests_exceeds_batch_size() { ... }
 
 ## Sécurité et Robustesse
 
-### S1 - Timeout pour Commandes Externes
+### ✅ S1 - Timeout pour Commandes Externes - COMPLÉTÉ
 
+> **Statut**: ✅ Implémenté le 2025-12-03
+
+**Implémentation réalisée**:
+- Création du module `velollm-core/src/command.rs` avec `run_with_timeout()`
+- Timeout par défaut de 5 secondes (`DEFAULT_TIMEOUT`)
+- Utilisation de `wait-timeout` crate pour les timeouts synchrones
+- Migration de toutes les commandes GPU dans `hardware.rs`:
+  - `nvidia-smi`, `rocm-smi`, `system_profiler`, `sysctl`, `lspci`
+
+**API**:
 ```rust
-use tokio::time::timeout;
-use std::time::Duration;
+use velollm_core::command::{run_with_timeout, CommandResult, DEFAULT_TIMEOUT};
 
-async fn run_nvidia_smi() -> Result<String> {
-    let result = timeout(
-        Duration::from_secs(5),
-        Command::new("nvidia-smi").output()
-    ).await??;
-
-    Ok(String::from_utf8_lossy(&result.stdout).to_string())
+let mut cmd = Command::new("nvidia-smi");
+match run_with_timeout(&mut cmd, Duration::from_secs(5)) {
+    CommandResult::Success(output) => { /* use output */ }
+    CommandResult::Timeout => { /* handle timeout */ }
+    CommandResult::SpawnError(e) => { /* command not found */ }
 }
 ```
 
@@ -607,8 +609,8 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 |----|-------|--------|--------|
 | P1-1 | ✅ Ajouter tracing/logging structuré | ~~4h~~ | ✅ Complété |
 | P1-2 | ✅ Unifier error handling | ~~6h~~ | ✅ Complété |
-| C1 | Supprimer champ dupliqué ollama_num_gpu | 15min | Faible |
-| C2 | Standardiser messages d'erreur | 1h | Faible |
+| C1 | ✅ Supprimer champ dupliqué ollama_num_gpu | ~~15min~~ | ✅ Complété |
+| C2 | ✅ Standardiser messages d'erreur | ~~1h~~ | ✅ Complété |
 
 ### Phase Court Terme (2-4 semaines)
 
@@ -616,8 +618,8 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 |----|-------|--------|--------|
 | P1-3 | ✅ Robustifier parsing (regex + fallbacks) | ~~8h~~ | ✅ Complété |
 | R1 | ✅ Extraire module parser | ~~6h~~ | ✅ Complété |
+| S1 | ✅ Timeouts commandes externes | ~~2h~~ | ✅ Complété |
 | O1 | Priority queue pour scheduler | 4h | Moyen |
-| S1 | Timeouts commandes externes | 2h | Moyen |
 
 ### Phase Moyen Terme (1-2 mois)
 
@@ -654,12 +656,14 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 
 ## Conclusion
 
-Le codebase VeloLLM est sur de bonnes bases avec une architecture solide et une implémentation fidèle des patterns d'optimisation LLM modernes. Les améliorations prioritaires P1 (logging, error handling, robustesse parsing) sont maintenant complétées. Les optimisations de performance (priority queue, LIFO allocation) apporteront des gains mesurables à haute charge.
+Le codebase VeloLLM est sur de bonnes bases avec une architecture solide et une implémentation fidèle des patterns d'optimisation LLM modernes. Toutes les améliorations prioritaires P1 et de robustesse S1 sont maintenant complétées. Le code est prêt pour la prochaine phase d'optimisation.
 
-**Prochaine étape recommandée**: Implémenter O1 (Priority queue pour scheduler) ou S1 (Timeouts commandes externes).
+**Prochaine étape recommandée**: Implémenter O1 (Priority queue pour scheduler) pour améliorer les performances à haute charge.
 
 > ✅ **P1-1 complété** (2025-12-03): Logging structuré implémenté avec `tracing` dans tous les crates (CLI, core, benchmarks).
 
 > ✅ **P1-2 complété** (2025-12-03): Error handling unifié avec `thiserror` pour les libraries et `anyhow` pour les applications. Nouveau module `error.rs` avec `HardwareError`, `SchedulerError` converti vers thiserror.
 
 > ✅ **P1-3 + R1 complétés** (2025-12-03): Module `parser/` créé avec parsers robustes basés sur regex pour nvidia-smi, rocm-smi, llama.cpp, et Apple Silicon. 45+ tests avec fixtures réalistes.
+
+> ✅ **S1 + C1 + C2 complétés** (2025-12-03): Timeouts de 5s sur toutes les commandes externes via `command.rs`. Nettoyage du code: champ dupliqué supprimé, messages d'erreur standardisés en minuscules.

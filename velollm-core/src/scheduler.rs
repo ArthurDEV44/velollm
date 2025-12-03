@@ -249,23 +249,23 @@ impl SchedulerOutput {
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum SchedulerError {
     /// Request queue is full
-    #[error("Request queue is full")]
+    #[error("request queue is full")]
     QueueFull,
 
     /// Request not found
-    #[error("Request {0} not found")]
+    #[error("request {0} not found")]
     RequestNotFound(u64),
 
     /// Sequence not found
-    #[error("Sequence {0} not found")]
+    #[error("sequence {0} not found")]
     SequenceNotFound(u64),
 
     /// Memory allocation failed
-    #[error("Out of memory: cannot allocate blocks")]
+    #[error("out of memory: cannot allocate blocks")]
     OutOfMemory,
 
     /// Invalid state transition
-    #[error("Invalid state transition from {from} to {to}")]
+    #[error("invalid state transition from {from} to {to}")]
     InvalidState {
         from: RequestState,
         to: RequestState,

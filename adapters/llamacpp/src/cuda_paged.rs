@@ -36,22 +36,22 @@ use thiserror::Error;
 /// Errors that can occur during CUDA paged attention operations
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum CudaPagedError {
-    #[error("CUDA paged attention not available (CUDA support not compiled)")]
+    #[error("cuda paged attention not available (cuda support not compiled)")]
     NotAvailable,
 
-    #[error("Invalid argument: {0}")]
+    #[error("invalid argument: {0}")]
     InvalidArgument(String),
 
-    #[error("CUDA kernel launch failed")]
+    #[error("cuda kernel launch failed")]
     KernelLaunchFailed,
 
-    #[error("Out of GPU memory")]
+    #[error("out of gpu memory")]
     OutOfMemory,
 
-    #[error("Unsupported configuration: {0}")]
+    #[error("unsupported configuration: {0}")]
     Unsupported(String),
 
-    #[error("CUDA error: {0}")]
+    #[error("cuda error: {0}")]
     CudaError(String),
 }
 

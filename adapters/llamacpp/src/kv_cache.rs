@@ -13,19 +13,19 @@ use velollm_core::paged_attention::{
 /// Errors that can occur during KV cache operations
 #[derive(Debug, Error)]
 pub enum KvCacheError {
-    #[error("Out of memory: cannot allocate blocks for sequence")]
+    #[error("out of memory: cannot allocate blocks for sequence")]
     OutOfMemory,
 
-    #[error("Sequence {0} not found")]
+    #[error("sequence {0} not found")]
     SequenceNotFound(i32),
 
-    #[error("Sequence {0} already exists")]
+    #[error("sequence {0} already exists")]
     SequenceExists(i32),
 
-    #[error("Invalid position range: p0={0}, p1={1}")]
+    #[error("invalid position range: p0={0}, p1={1}")]
     InvalidPositionRange(i32, i32),
 
-    #[error("Block manager error: {0}")]
+    #[error("block manager error: {0}")]
     BlockManager(#[from] PagedAttentionError),
 }
 

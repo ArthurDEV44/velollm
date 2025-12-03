@@ -16,5 +16,6 @@ num_cpus = { workspace = true }
 tracing = { workspace = true }
 regex = { workspace = true }
 once_cell = { workspace = true }
+wait-timeout = { workspace = true }
 
 [dev-dependencies]

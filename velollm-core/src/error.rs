@@ -39,33 +39,33 @@ use thiserror::Error;
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum HardwareError {
     /// GPU detection failed
-    #[error("GPU detection failed: {0}")]
+    #[error("gpu detection failed: {0}")]
     GpuDetection(String),
 
     /// CPU detection failed
-    #[error("CPU detection failed: {0}")]
+    #[error("cpu detection failed: {0}")]
     CpuDetection(String),
 
     /// Memory detection failed
-    #[error("Memory detection failed: {0}")]
+    #[error("memory detection failed: {0}")]
     MemoryDetection(String),
 
     /// Command execution failed
-    #[error("Command '{command}' failed: {message}")]
+    #[error("command '{command}' failed: {message}")]
     CommandFailed {
         command: String,
         message: String,
     },
 
     /// Parsing error when reading hardware info
-    #[error("Failed to parse {location}: {message}")]
+    #[error("failed to parse {location}: {message}")]
     ParseError {
         location: String,
         message: String,
     },
 
     /// System information unavailable
-    #[error("System information unavailable: {0}")]
+    #[error("system information unavailable: {0}")]
     SystemInfoUnavailable(String),
 }
 
@@ -109,13 +109,13 @@ mod tests {
     #[test]
     fn test_hardware_error_display() {
         let err = HardwareError::gpu("nvidia-smi not found");
-        assert_eq!(err.to_string(), "GPU detection failed: nvidia-smi not found");
+        assert_eq!(err.to_string(), "gpu detection failed: nvidia-smi not found");
 
         let err = HardwareError::command("nvidia-smi", "exit code 1");
-        assert_eq!(err.to_string(), "Command 'nvidia-smi' failed: exit code 1");
+        assert_eq!(err.to_string(), "command 'nvidia-smi' failed: exit code 1");
 
         let err = HardwareError::parse("nvidia-smi output", "unexpected format");
-        assert_eq!(err.to_string(), "Failed to parse nvidia-smi output: unexpected format");
+        assert_eq!(err.to_string(), "failed to parse nvidia-smi output: unexpected format");
     }
 
     #[test]

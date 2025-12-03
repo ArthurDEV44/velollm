@@ -67,16 +67,16 @@ pub const DEFAULT_BLOCK_SIZE: usize = 16;
 /// Errors that can occur during paged attention operations
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum PagedAttentionError {
-    #[error("Out of memory: no free blocks available")]
+    #[error("out of memory: no free blocks available")]
     OutOfMemory,
 
-    #[error("Sequence {0} not found")]
+    #[error("sequence {0} not found")]
     SequenceNotFound(u64),
 
-    #[error("Block {0} not found")]
+    #[error("block {0} not found")]
     BlockNotFound(usize),
 
-    #[error("Invalid configuration: {0}")]
+    #[error("invalid configuration: {0}")]
     InvalidConfig(String),
 }
 

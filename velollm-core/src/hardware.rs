@@ -2,6 +2,7 @@
 //
 // Detects GPU (NVIDIA/AMD/Apple), CPU, RAM, and OS information
 
+use crate::command::{run_with_default_timeout, CommandResult};
 use crate::error::HardwareError;
 use crate::parser::{NvidiaSmiParser, RocmSmiParser};
 #[cfg(target_os = "macos")]
@@ -144,16 +145,26 @@ fn detect_gpu() -> Option<GpuInfo> {
 pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
     trace!("Trying nvidia-smi");
 
-    let output = Command::new("nvidia-smi")
-        .args([
-            "--query-gpu=name,memory.total,memory.free,driver_version,compute_cap",
-            "--format=csv,noheader,nounits",
-        ])
-        .output()
-        .ok()?;
+    let mut cmd = Command::new("nvidia-smi");
+    cmd.args([
+        "--query-gpu=name,memory.total,memory.free,driver_version,compute_cap",
+        "--format=csv,noheader,nounits",
+    ]);
+
+    let output = match run_with_default_timeout(&mut cmd) {
+        CommandResult::Success(output) => output,
+        CommandResult::Timeout => {
+            warn!("nvidia-smi timed out");
+            return None;
+        }
+        CommandResult::SpawnError(_) => {
+            trace!("nvidia-smi not found");
+            return None;
+        }
+    };
 
     if !output.status.success() {
-        trace!("nvidia-smi command failed or not found");
+        trace!("nvidia-smi command failed");
         return None;
     }
 
@@ -177,13 +188,23 @@ pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
 fn detect_amd_gpu() -> Option<GpuInfo> {
     trace!("Trying rocm-smi");
 
-    let output = Command::new("rocm-smi")
-        .args(["--showproductname", "--showmeminfo", "vram"])
-        .output()
-        .ok()?;
+    let mut cmd = Command::new("rocm-smi");
+    cmd.args(["--showproductname", "--showmeminfo", "vram"]);
+
+    let output = match run_with_default_timeout(&mut cmd) {
+        CommandResult::Success(output) => output,
+        CommandResult::Timeout => {
+            warn!("rocm-smi timed out");
+            return None;
+        }
+        CommandResult::SpawnError(_) => {
+            trace!("rocm-smi not found");
+            return None;
+        }
+    };
 
     if !output.status.success() {
-        trace!("rocm-smi command failed or not found");
+        trace!("rocm-smi command failed");
         return None;
     }
 
@@ -207,10 +228,20 @@ fn detect_amd_gpu() -> Option<GpuInfo> {
 fn detect_apple_gpu() -> Option<GpuInfo> {
     #[cfg(target_os = "macos")]
     {
-        let output = Command::new("system_profiler")
-            .args(["SPDisplaysDataType", "-json"])
-            .output()
-            .ok()?;
+        let mut cmd = Command::new("system_profiler");
+        cmd.args(["SPDisplaysDataType", "-json"]);
+
+        let output = match run_with_default_timeout(&mut cmd) {
+            CommandResult::Success(output) => output,
+            CommandResult::Timeout => {
+                warn!("system_profiler timed out");
+                return None;
+            }
+            CommandResult::SpawnError(_) => {
+                trace!("system_profiler not found");
+                return None;
+            }
+        };
 
         if !output.status.success() {
             return None;
@@ -240,14 +271,18 @@ fn detect_apple_gpu() -> Option<GpuInfo> {
 /// Detect unified memory on Apple Silicon
 #[cfg(target_os = "macos")]
 fn detect_unified_memory() -> u64 {
-    let output = Command::new("sysctl").arg("hw.memsize").output().ok();
+    let mut cmd = Command::new("sysctl");
+    cmd.arg("hw.memsize");
 
-    if let Some(out) = output {
-        let stdout = String::from_utf8_lossy(&out.stdout);
-        if let Some(value) = stdout.split(':').nth(1) {
-            if let Ok(bytes) = value.trim().parse::<u64>() {
-                return bytes / (1024 * 1024); // Convert to MB
-            }
+    let output = match run_with_default_timeout(&mut cmd) {
+        CommandResult::Success(output) => output,
+        _ => return 0,
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if let Some(value) = stdout.split(':').nth(1) {
+        if let Ok(bytes) = value.trim().parse::<u64>() {
+            return bytes / (1024 * 1024); // Convert to MB
         }
     }
 
@@ -267,7 +302,19 @@ fn detect_intel_gpu() -> Option<GpuInfo> {
 
     #[cfg(target_os = "linux")]
     {
-        let output = Command::new("lspci").output().ok()?;
+        let mut cmd = Command::new("lspci");
+
+        let output = match run_with_default_timeout(&mut cmd) {
+            CommandResult::Success(output) => output,
+            CommandResult::Timeout => {
+                warn!("lspci timed out");
+                return None;
+            }
+            CommandResult::SpawnError(_) => {
+                trace!("lspci not found");
+                return None;
+            }
+        };
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         for line in stdout.lines() {
