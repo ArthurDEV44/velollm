@@ -3,6 +3,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use velollm_core::parser::LlamaCppParser;
 
 pub mod cuda_paged;
 pub mod kv_cache;
@@ -115,39 +116,21 @@ impl SpeculativeRunner {
     /// llama_print_timings:       total time =    2368.24 ms /    59 tokens
     /// ```
     pub fn parse_perf_metrics(&self, output: &str) -> Option<PerfMetrics> {
-        let mut metrics = PerfMetrics::default();
+        // Use robust regex-based parser from velollm-core
+        let parsed = LlamaCppParser::parse(output);
 
-        for line in output.lines() {
-            if line.contains("llama_print_timings") {
-                // Parse prompt eval time (time to first token)
-                if line.contains("prompt eval time") {
-                    if let Some(time) = extract_time_ms(line) {
-                        metrics.time_to_first_token_ms = time;
-                    }
-                }
-
-                // Parse eval time (generation tokens per second)
-                if line.contains("eval time") && !line.contains("prompt eval") {
-                    if let Some(tps) = extract_tokens_per_second(line) {
-                        metrics.tokens_per_second = tps;
-                    }
-                }
-
-                // Parse total time
-                if line.contains("total time") {
-                    if let Some(time) = extract_time_ms(line) {
-                        metrics.total_time_ms = time;
-                    }
-                }
+        // Only return metrics if we successfully parsed at least tokens/s
+        if let Some(tps) = parsed.tokens_per_second {
+            if tps > 0.0 {
+                return Some(PerfMetrics {
+                    tokens_per_second: tps,
+                    time_to_first_token_ms: parsed.prompt_eval_time_ms.unwrap_or(0.0),
+                    total_time_ms: parsed.total_time_ms.unwrap_or(0.0),
+                });
             }
         }
 
-        // Only return metrics if we successfully parsed at least tokens/s
-        if metrics.tokens_per_second > 0.0 {
-            Some(metrics)
-        } else {
-            None
-        }
+        None
     }
 }
 
@@ -160,28 +143,6 @@ pub struct PerfMetrics {
     pub time_to_first_token_ms: f64,
     /// Total inference time in milliseconds
     pub total_time_ms: f64,
-}
-
-/// Extract time in milliseconds from a llama.cpp timing line
-fn extract_time_ms(line: &str) -> Option<f64> {
-    // Line format: "llama_print_timings:        eval time =    2000.00 ms / ..."
-    line.split('=')
-        .nth(1)?
-        .split_whitespace()
-        .next()?
-        .parse()
-        .ok()
-}
-
-/// Extract tokens per second from a llama.cpp timing line
-fn extract_tokens_per_second(line: &str) -> Option<f64> {
-    // Line format: "... (   40.82 ms per token,    24.50 tokens per second)"
-    if let Some(tps_part) = line.split("tokens per second").next() {
-        // Get the last number before "tokens per second"
-        tps_part.split(',').next_back()?.trim().parse().ok()
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]
@@ -229,20 +190,7 @@ llama_print_timings:        eval time =    1500.00 ms /    30 runs   (   50.00 m
         assert!(result.is_none());
     }
 
-    #[test]
-    fn test_extract_time_ms() {
-        let line = "llama_print_timings:        eval time =    2000.00 ms /    49 runs";
-        assert_eq!(extract_time_ms(line), Some(2000.00));
-
-        let line2 = "llama_print_timings: prompt eval time =     234.56 ms /    10 tokens";
-        assert_eq!(extract_time_ms(line2), Some(234.56));
-    }
-
-    #[test]
-    fn test_extract_tokens_per_second() {
-        let line = "llama_print_timings:        eval time =    2000.00 ms /    49 runs   (   40.82 ms per token,    24.50 tokens per second)";
-        assert_eq!(extract_tokens_per_second(line), Some(24.50));
-    }
+    // Note: Detailed extraction tests are now in velollm-core/src/parser/llama.rs
 
     #[test]
     fn test_speculative_config_serialization() {

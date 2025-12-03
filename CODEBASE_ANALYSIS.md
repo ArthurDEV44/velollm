@@ -30,9 +30,9 @@ Le codebase VeloLLM est **globalement bien structuré** avec une architecture mo
 | Métrique | Valeur |
 |----------|--------|
 | Crates | 6 |
-| Lignes de code Rust | ~5,500 |
+| Lignes de code Rust | ~6,000 |
 | Lignes de code CUDA | ~500 |
-| Tests unitaires | 109 |
+| Tests unitaires | 131 |
 | Doc tests | 8 |
 | Couverture modules | 100% |
 
@@ -46,7 +46,7 @@ Le codebase VeloLLM est **globalement bien structuré** avec une architecture mo
 | Performance | ⭐⭐⭐ | Améliorations possibles (voir section dédiée) |
 | Error Handling | ⭐⭐⭐⭐ | ✅ Unifié avec thiserror/anyhow |
 | Logging | ⭐⭐⭐⭐ | ✅ Implémenté avec `tracing` |
-| Robustesse | ⭐⭐⭐ | Parsing fragile, validation partielle |
+| Robustesse | ⭐⭐⭐⭐ | ✅ Parsing robuste avec regex, validation partielle |
 
 ---
 
@@ -209,48 +209,36 @@ pub enum SchedulerError {
 
 ---
 
-### P1 - Robustesse du Parsing (Impact: Élevé)
+### ✅ P1 - Robustesse du Parsing (Impact: Élevé) - COMPLÉTÉ
 
-**Problème**: Parsing des sorties nvidia-smi, rocm-smi, llama.cpp est fragile.
+> **Statut**: ✅ Implémenté le 2025-12-03
 
-**Exemples de code fragile**:
+**Implémentation réalisée**:
+- Création du module `velollm-core/src/parser/` avec parsers robustes basés sur regex
+- `NvidiaSmiParser`: Parse CSV et formats par défaut de nvidia-smi
+- `RocmSmiParser`: Parse multiples formats de rocm-smi (bytes, MB, MiB)
+- `LlamaCppParser`: Parse timings llama.cpp (ancien et nouveau format `llama_perf_`)
+- `AppleChip`: Détection robuste des puces Apple Silicon (M1-M4, Pro/Max/Ultra)
 
-```rust
-// hardware.rs:89 - Parsing nvidia-smi
-if let Some(mem_line) = output.lines().find(|l| l.contains("MiB")) {
-    let parts: Vec<&str> = mem_line.split_whitespace().collect();
-    // Assume format spécifique...
-}
-
-// lib.rs:166 - Parsing llama.cpp timing
-fn extract_time_ms(text: &str, pattern: &str) -> Option<f64> {
-    let start = text.find(pattern)?;
-    // Assume format "X ms"...
-}
+**Architecture du module parser**:
+```
+velollm-core/src/parser/
+├── mod.rs      # Types communs: GpuMemoryInfo, NvidiaGpuInfo, AmdGpuInfo, AppleChip
+├── nvidia.rs   # NvidiaSmiParser avec regex compilées (once_cell::Lazy)
+├── amd.rs      # RocmSmiParser avec fallbacks multiples
+└── llama.rs    # LlamaCppParser pour métriques de performance
 ```
 
-**Solution**: Utiliser des parsers structurés ou regex avec fallbacks.
+**Caractéristiques**:
+- Regex compilées une seule fois via `once_cell::sync::Lazy`
+- Fallbacks multiples pour formats variés (MB, MiB, bytes)
+- Tests exhaustifs avec fixtures réalistes (45+ tests)
+- Support du nouveau format `llama_perf_context_print`
 
-```rust
-use regex::Regex;
-use once_cell::sync::Lazy;
-
-static VRAM_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(\d+)\s*MiB\s*/\s*(\d+)\s*MiB").unwrap()
-});
-
-fn parse_vram(output: &str) -> Option<(u64, u64)> {
-    VRAM_REGEX.captures(output).map(|caps| {
-        let used = caps[1].parse().ok()?;
-        let total = caps[2].parse().ok()?;
-        Some((used, total))
-    }).flatten()
-}
-```
-
-**Fichiers concernés**:
-- `velollm-core/src/hardware.rs` (nvidia-smi, rocm-smi, lspci)
-- `adapters/llamacpp/src/lib.rs` (timing output)
+**Fichiers modifiés**:
+- `velollm-core/src/hardware.rs` - Utilise `NvidiaSmiParser`, `RocmSmiParser`, `AppleChip`
+- `adapters/llamacpp/src/lib.rs` - Utilise `LlamaCppParser`
+- `Cargo.toml` - Ajout dépendances `regex` et `once_cell`
 
 ---
 
@@ -626,9 +614,9 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 
 | ID | Tâche | Effort | Impact |
 |----|-------|--------|--------|
-| P1-3 | Robustifier parsing (regex + fallbacks) | 8h | Élevé |
+| P1-3 | ✅ Robustifier parsing (regex + fallbacks) | ~~8h~~ | ✅ Complété |
+| R1 | ✅ Extraire module parser | ~~6h~~ | ✅ Complété |
 | O1 | Priority queue pour scheduler | 4h | Moyen |
-| R1 | Extraire module parser | 6h | Moyen |
 | S1 | Timeouts commandes externes | 2h | Moyen |
 
 ### Phase Moyen Terme (1-2 mois)
@@ -666,10 +654,12 @@ let block = self.allocate().ok_or(PagedAttentionError::OutOfMemory)?;
 
 ## Conclusion
 
-Le codebase VeloLLM est sur de bonnes bases avec une architecture solide et une implémentation fidèle des patterns d'optimisation LLM modernes. Les améliorations prioritaires (logging, error handling, robustesse parsing) augmenteront significativement la qualité de production. Les optimisations de performance (priority queue, LIFO allocation) apporteront des gains mesurables à haute charge.
+Le codebase VeloLLM est sur de bonnes bases avec une architecture solide et une implémentation fidèle des patterns d'optimisation LLM modernes. Les améliorations prioritaires P1 (logging, error handling, robustesse parsing) sont maintenant complétées. Les optimisations de performance (priority queue, LIFO allocation) apporteront des gains mesurables à haute charge.
 
-**Prochaine étape recommandée**: Robustifier le parsing (P1-3) en utilisant des regex avec fallbacks pour les sorties de nvidia-smi, rocm-smi, et llama.cpp.
+**Prochaine étape recommandée**: Implémenter O1 (Priority queue pour scheduler) ou S1 (Timeouts commandes externes).
 
 > ✅ **P1-1 complété** (2025-12-03): Logging structuré implémenté avec `tracing` dans tous les crates (CLI, core, benchmarks).
 
 > ✅ **P1-2 complété** (2025-12-03): Error handling unifié avec `thiserror` pour les libraries et `anyhow` pour les applications. Nouveau module `error.rs` avec `HardwareError`, `SchedulerError` converti vers thiserror.
+
+> ✅ **P1-3 + R1 complétés** (2025-12-03): Module `parser/` créé avec parsers robustes basés sur regex pour nvidia-smi, rocm-smi, llama.cpp, et Apple Silicon. 45+ tests avec fixtures réalistes.

@@ -14,5 +14,7 @@ thiserror = { workspace = true }
 sysinfo = { workspace = true }
 num_cpus = { workspace = true }
 tracing = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]

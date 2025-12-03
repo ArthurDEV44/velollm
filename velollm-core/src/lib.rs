@@ -6,6 +6,7 @@ pub mod error;
 pub mod hardware;
 pub mod optimizer;
 pub mod paged_attention;
+pub mod parser;
 pub mod scheduler;
 
 // Re-export common error types for convenience

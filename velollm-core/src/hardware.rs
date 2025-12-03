@@ -3,6 +3,9 @@
 // Detects GPU (NVIDIA/AMD/Apple), CPU, RAM, and OS information
 
 use crate::error::HardwareError;
+use crate::parser::{NvidiaSmiParser, RocmSmiParser};
+#[cfg(target_os = "macos")]
+use crate::parser::AppleChip;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use sysinfo::System;
@@ -157,22 +160,17 @@ pub(crate) fn detect_nvidia_gpu() -> Option<GpuInfo> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     trace!(output = %stdout, "nvidia-smi output");
 
-    let line = stdout.lines().next()?;
-    let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+    // Use robust regex-based parser
+    let parsed = NvidiaSmiParser::parse_csv(&stdout)?;
 
-    if parts.len() >= 3 {
-        Some(GpuInfo {
-            name: parts[0].to_string(),
-            vendor: GpuVendor::Nvidia,
-            vram_total_mb: parts[1].parse().ok()?,
-            vram_free_mb: parts[2].parse().ok()?,
-            driver_version: parts.get(3).map(|s| s.to_string()),
-            compute_capability: parts.get(4).map(|s| s.to_string()),
-        })
-    } else {
-        warn!(parts = parts.len(), "Unexpected nvidia-smi output format");
-        None
-    }
+    Some(GpuInfo {
+        name: parsed.name,
+        vendor: GpuVendor::Nvidia,
+        vram_total_mb: parsed.vram_total_mb,
+        vram_free_mb: parsed.vram_free_mb,
+        driver_version: parsed.driver_version,
+        compute_capability: parsed.compute_capability,
+    })
 }
 
 /// Detect AMD GPU using rocm-smi
@@ -192,44 +190,17 @@ fn detect_amd_gpu() -> Option<GpuInfo> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     trace!(output = %stdout, "rocm-smi output");
 
-    // Parse rocm-smi output (format varies)
-    // This is a simplified parser - real implementation would be more robust
-    let name = stdout
-        .lines()
-        .find(|l| l.contains("Card series"))
-        .and_then(|l| l.split(':').nth(1))
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "AMD GPU".to_string());
-
-    // Try to get VRAM info
-    let vram_total = extract_vram_from_rocm(&stdout).unwrap_or(0);
+    // Use robust regex-based parser
+    let parsed = RocmSmiParser::parse(&stdout)?;
 
     Some(GpuInfo {
-        name,
+        name: parsed.name,
         vendor: GpuVendor::Amd,
-        vram_total_mb: vram_total,
-        vram_free_mb: vram_total, // rocm-smi doesn't easily give free VRAM
+        vram_total_mb: parsed.vram_total_mb,
+        vram_free_mb: parsed.vram_free_mb.unwrap_or(parsed.vram_total_mb),
         driver_version: None,
         compute_capability: None,
     })
-}
-
-/// Extract VRAM from rocm-smi output
-fn extract_vram_from_rocm(output: &str) -> Option<u64> {
-    for line in output.lines() {
-        if line.contains("Total") && line.contains("MB") {
-            // Extract number from line like "Total: 8192 MB"
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            for (i, part) in parts.iter().enumerate() {
-                if part.contains("MB") && i > 0 {
-                    if let Ok(vram) = parts[i - 1].parse::<u64>() {
-                        return Some(vram);
-                    }
-                }
-            }
-        }
-    }
-    None
 }
 
 /// Detect Apple Silicon GPU using system_profiler
@@ -237,7 +208,7 @@ fn detect_apple_gpu() -> Option<GpuInfo> {
     #[cfg(target_os = "macos")]
     {
         let output = Command::new("system_profiler")
-            .args(&["SPDisplaysDataType", "-json"])
+            .args(["SPDisplaysDataType", "-json"])
             .output()
             .ok()?;
 
@@ -247,24 +218,13 @@ fn detect_apple_gpu() -> Option<GpuInfo> {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
 
-        // Try to detect Apple Silicon (M1/M2/M3)
-        if stdout.contains("Apple M") {
+        // Use robust regex-based parser for Apple chip detection
+        if let Some(chip) = AppleChip::from_output(&stdout) {
             // Parse unified memory as VRAM
             let memory_mb = detect_unified_memory();
 
-            // Extract chip name
-            let name = if stdout.contains("M3") {
-                "Apple M3".to_string()
-            } else if stdout.contains("M2") {
-                "Apple M2".to_string()
-            } else if stdout.contains("M1") {
-                "Apple M1".to_string()
-            } else {
-                "Apple Silicon".to_string()
-            };
-
             return Some(GpuInfo {
-                name,
+                name: chip.display_name(),
                 vendor: GpuVendor::Apple,
                 vram_total_mb: memory_mb,
                 vram_free_mb: memory_mb,
