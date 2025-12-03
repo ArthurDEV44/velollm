@@ -49,6 +49,7 @@ use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod convert;
 mod error;
+mod optimizer;
 mod proxy;
 mod routes;
 mod state;

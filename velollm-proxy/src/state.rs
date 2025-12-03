@@ -1,5 +1,6 @@
 //! Application state for VeloLLM proxy.
 
+use crate::optimizer::ToolOptimizer;
 use crate::proxy::OllamaProxy;
 use tokio::sync::Mutex;
 
@@ -7,6 +8,9 @@ use tokio::sync::Mutex;
 pub struct AppState {
     /// Ollama proxy client
     pub proxy: OllamaProxy,
+
+    /// Tool optimizer for enhanced tool calling
+    pub tool_optimizer: Mutex<ToolOptimizer>,
 
     /// Runtime statistics
     pub stats: Mutex<ProxyStats>,
@@ -20,6 +24,7 @@ impl AppState {
     pub fn new(config: ProxyConfig) -> Self {
         Self {
             proxy: OllamaProxy::new(&config.ollama_url),
+            tool_optimizer: Mutex::new(ToolOptimizer::new()),
             stats: Mutex::new(ProxyStats::default()),
             config,
         }

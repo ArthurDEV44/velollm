@@ -37,6 +37,12 @@ bytes = { workspace = true }
 # UUID for request IDs
 uuid = { workspace = true }
 
+# JSON Schema validation
+jsonschema = { workspace = true }
+
+# Regex for JSON repair
+regex = { workspace = true }
+
 # Internal crates
 velollm-core = { path = "../velollm-core" }
 

@@ -19,13 +19,22 @@ use tracing::{debug, error, info, warn};
 
 use crate::convert::{ollama_chunk_to_openai_sse, ollama_to_openai_chat, openai_to_ollama_chat};
 use crate::error::ProxyError;
+use crate::optimizer::ToolOptimizer;
 use crate::state::AppState;
 use crate::types::ollama::ChatResponse as OllamaChatResponse;
-use crate::types::openai::{ChatCompletionRequest, Model, ModelsResponse};
+use crate::types::openai::{ChatCompletionRequest, ChatCompletionResponse, Model, ModelsResponse};
 
 /// Chat completions endpoint
 ///
 /// POST /v1/chat/completions
+///
+/// This endpoint provides OpenAI-compatible chat completions with
+/// enhanced tool calling support for Mistral and Llama models.
+///
+/// Tool calling enhancements (TASK-023):
+/// - JSON repair for malformed arguments
+/// - Deduplication of duplicate tool calls
+/// - Validation against JSON Schema
 pub async fn chat_completions(
     State(state): State<Arc<AppState>>,
     Json(request): Json<ChatCompletionRequest>,
@@ -39,14 +48,31 @@ pub async fn chat_completions(
     );
 
     // Validate model is Mistral or Llama for tool calling
-    if request.has_tools() {
-        let model_lower = request.model.to_lowercase();
-        if !model_lower.contains("mistral") && !model_lower.contains("llama") {
+    let has_tools = request.has_tools();
+    if has_tools {
+        if !ToolOptimizer::is_model_supported(&request.model) {
             warn!(
                 model = %request.model,
-                "Tool calling requested but model may not support it reliably. \
-                 Recommended: mistral:* or llama3.*"
+                "Tool calling requested but model is not supported. \
+                 Only Mistral and Llama models are supported for reliable tool calling. \
+                 Recommended: mistral:7b, mistral-small, llama3.1:8b, llama3.2:3b"
             );
+            // We don't reject the request, just warn - the user might know what they're doing
+        } else {
+            let model_type = ToolOptimizer::get_model_type(&request.model);
+            info!(
+                model = %request.model,
+                model_type = ?model_type,
+                "Using optimized tool calling for supported model"
+            );
+        }
+
+        // Register tools with the optimizer for validation
+        if let Some(ref tools) = request.tools {
+            let mut optimizer = state.tool_optimizer.lock().await;
+            if let Err(e) = optimizer.register_tools(tools) {
+                warn!(error = %e, "Failed to register tools, validation disabled");
+            }
         }
     }
 
@@ -62,6 +88,8 @@ pub async fn chat_completions(
 
     if request.stream {
         // Streaming response
+        // Note: Tool call optimization for streaming is limited because we need
+        // to accumulate the full response before processing tool calls
         let stream = state.proxy.chat_stream(&ollama_request).await?;
         let chunk_id = format!("chatcmpl-{}", uuid::Uuid::new_v4());
 
@@ -80,7 +108,12 @@ pub async fn chat_completions(
         let ollama_response = state.proxy.chat(&ollama_request).await?;
 
         // Convert to OpenAI format
-        let openai_response = ollama_to_openai_chat(&ollama_response, &model);
+        let mut openai_response = ollama_to_openai_chat(&ollama_response, &model);
+
+        // Apply tool calling optimizations if tools were used
+        if has_tools {
+            openai_response = optimize_tool_calls(&state, openai_response).await;
+        }
 
         // Update stats
         {
@@ -91,6 +124,53 @@ pub async fn chat_completions(
 
         Ok(Json(openai_response).into_response())
     }
+}
+
+/// Apply tool calling optimizations to the response
+///
+/// This performs:
+/// - JSON repair for malformed arguments
+/// - Deduplication of identical tool calls
+/// - Validation against JSON Schema
+async fn optimize_tool_calls(
+    state: &Arc<AppState>,
+    mut response: ChatCompletionResponse,
+) -> ChatCompletionResponse {
+    // Check if there are tool calls to optimize
+    let has_tool_calls = response
+        .choices
+        .iter()
+        .any(|c| c.message.tool_calls.as_ref().is_some_and(|tc| !tc.is_empty()));
+
+    if !has_tool_calls {
+        return response;
+    }
+
+    // Process tool calls through the optimizer
+    let mut optimizer = state.tool_optimizer.lock().await;
+
+    for choice in &mut response.choices {
+        if let Some(tool_calls) = choice.message.tool_calls.take() {
+            let optimized = optimizer.process_tool_calls(tool_calls);
+            if !optimized.is_empty() {
+                choice.message.tool_calls = Some(optimized);
+            }
+        }
+    }
+
+    // Log optimization stats
+    let stats = optimizer.stats();
+    if stats.json_repairs > 0 || stats.duplicates_removed > 0 {
+        info!(
+            repairs = stats.json_repairs,
+            duplicates = stats.duplicates_removed,
+            validations = stats.validation_successes,
+            failures = stats.validation_failures,
+            "Tool call optimization applied"
+        );
+    }
+
+    response
 }
 
 /// Convert Ollama byte stream to OpenAI SSE events
