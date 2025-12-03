@@ -5,6 +5,7 @@
 pub mod hardware;
 pub mod optimizer;
 pub mod paged_attention;
+pub mod scheduler;
 
 #[cfg(test)]
 mod hardware_tests;

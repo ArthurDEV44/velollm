@@ -293,12 +293,24 @@ Features implemented:
 
 ---
 
-#### TASK-017: Continuous Batching Scheduler
+#### TASK-017: Continuous Batching Scheduler ✅
 **Priority**: P1
 **Estimated effort**: 10h
 **Dependencies**: TASK-016
 
-**Instructions**:
+**Completed**: Module `velollm-core/src/scheduler.rs`
+
+Features implemented:
+- `Scheduler` with continuous batching support
+- `Request` with state management (Waiting, Running, Preempted, Finished)
+- `SchedulerConfig` with low_latency and high_throughput presets
+- Priority-based scheduling with priority boost for long-waiting requests
+- Prefill/decode phase separation
+- Preemption under memory pressure
+- Integration with BlockManager for memory coordination
+- 15 unit tests + 1 doc test
+
+**Original Instructions** (for reference):
 
 **File**: `velollm-core/src/scheduler.rs`
 
@@ -461,22 +473,22 @@ Voir [TODO_MVP.md](TODO_MVP.md) pour les détails.
 - [x] TASK-014: Block manager ✅
 - [x] TASK-015: llama.cpp paged KV cache integration ✅
 - [x] TASK-016: CUDA paged attention kernel ✅
-- [ ] TASK-017: Continuous batching scheduler
+- [x] TASK-017: Continuous batching scheduler ✅
 - [ ] TASK-018: LocalAI adapter
 - [ ] TASK-019: vLLM adapter
 - [ ] TASK-020: Performance profiler
 
-**Progress**: 4/8 tasks (50%)
+**Progress**: 5/8 tasks (62.5%)
 
 **Tests Status**:
-- velollm-core: 48/48 tests passing ✅
+- velollm-core: 63/63 tests passing ✅ (+15 scheduler tests)
 - velollm-benchmarks: 3/3 tests passing ✅
 - velollm-adapters-llamacpp: 29/29 tests passing ✅ (+9 cuda_paged tests)
 - velollm-adapters-ollama: 6/6 tests passing ✅
 - velollm-cli: 8/8 integration tests passing ✅
-- Doc tests: 5/5 passing ✅
+- Doc tests: 8/8 passing ✅ (+1 scheduler doc test)
 
-**Total: 99 tests passing**
+**Total: 117 tests passing**
 
 ---
 
@@ -537,4 +549,4 @@ cargo doc --open
 
 ---
 
-**Next task: TASK-017 (Continuous Batching Scheduler) 🚀**
+**Next task: TASK-018 (LocalAI Adapter) 🚀**
