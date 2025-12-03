@@ -1,7 +1,11 @@
 //! Application state for VeloLLM proxy.
 
+use std::sync::Arc;
+
+use crate::batcher::{BatcherConfig, BatcherMetrics, RequestQueue};
 use crate::optimizer::ToolOptimizer;
 use crate::proxy::OllamaProxy;
+use crate::types::openai::ChatCompletionRequest;
 use tokio::sync::Mutex;
 
 /// Application state shared across all handlers
@@ -12,6 +16,15 @@ pub struct AppState {
     /// Tool optimizer for enhanced tool calling
     pub tool_optimizer: Mutex<ToolOptimizer>,
 
+    /// Request queue for batching and concurrency control
+    pub request_queue: RequestQueue<ChatCompletionRequest>,
+
+    /// Batcher metrics for monitoring
+    pub batcher_metrics: Arc<BatcherMetrics>,
+
+    /// Batcher configuration
+    pub batcher_config: BatcherConfig,
+
     /// Runtime statistics
     pub stats: Mutex<ProxyStats>,
 
@@ -20,11 +33,22 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Create new application state
+    /// Create new application state with default batcher configuration
     pub fn new(config: ProxyConfig) -> Self {
+        Self::with_batcher_config(config, BatcherConfig::from_env())
+    }
+
+    /// Create new application state with custom batcher configuration
+    pub fn with_batcher_config(config: ProxyConfig, batcher_config: BatcherConfig) -> Self {
+        let batcher_metrics = Arc::new(BatcherMetrics::new());
+        let request_queue = RequestQueue::new(batcher_config.clone(), batcher_metrics.clone());
+
         Self {
             proxy: OllamaProxy::new(&config.ollama_url),
             tool_optimizer: Mutex::new(ToolOptimizer::new()),
+            request_queue,
+            batcher_metrics,
+            batcher_config,
             stats: Mutex::new(ProxyStats::default()),
             config,
         }

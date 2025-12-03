@@ -47,6 +47,7 @@ use tower_http::{
 use tracing::{info, warn};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
+mod batcher;
 mod convert;
 mod error;
 mod optimizer;
@@ -116,7 +117,7 @@ async fn main() -> anyhow::Result<()> {
                 .allow_headers(Any),
         )
         .layer(TraceLayer::new_for_http())
-        .with_state(state);
+        .with_state(state.clone());
 
     // Start server
     let addr = format!("0.0.0.0:{}", config.port);
@@ -134,11 +135,29 @@ async fn main() -> anyhow::Result<()> {
     println!("  Listening on: http://{}", addr);
     println!("  Ollama backend: {}", config.ollama_url);
     println!();
+    println!("  Batcher configuration:");
+    println!(
+        "    Max concurrent: {}",
+        state.batcher_config.max_concurrent
+    );
+    println!(
+        "    Max queue: {} (per model: {})",
+        state.batcher_config.max_queue_total, state.batcher_config.max_queue_per_model
+    );
+    println!(
+        "    Model-aware queuing: {}",
+        if state.batcher_config.model_aware_queuing {
+            "enabled"
+        } else {
+            "disabled"
+        }
+    );
+    println!();
     println!("  Endpoints:");
     println!("    OpenAI: POST /v1/chat/completions");
     println!("    Ollama: POST /api/chat, POST /api/generate");
     println!("    Models: GET  /v1/models, GET /api/tags");
-    println!("    Health: GET  /health, /ready, /live");
+    println!("    Health: GET  /health, /ready, /live, /metrics");
     println!();
     println!("  Supported models for tool calling:");
     println!("    - Mistral: mistral:7b, mistral:latest");
