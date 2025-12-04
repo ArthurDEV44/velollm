@@ -100,10 +100,9 @@ impl SemanticCache {
             .embed(vec![text], None)
             .map_err(|e| SemanticCacheError::EmbeddingFailed(e.to_string()))?;
 
-        embeddings
-            .into_iter()
-            .next()
-            .ok_or_else(|| SemanticCacheError::EmbeddingFailed("No embedding generated".to_string()))
+        embeddings.into_iter().next().ok_or_else(|| {
+            SemanticCacheError::EmbeddingFailed("No embedding generated".to_string())
+        })
     }
 
     /// Calculate cosine similarity between two vectors
@@ -189,11 +188,8 @@ impl SemanticCache {
         }
 
         // Add new entry
-        self.entries.push(SemanticEntry {
-            embedding,
-            response,
-            query_text,
-        });
+        self.entries
+            .push(SemanticEntry { embedding, response, query_text });
 
         Ok(())
     }
@@ -262,11 +258,7 @@ mod tests {
                 },
                 finish_reason: Some("stop".to_string()),
             }],
-            usage: Usage {
-                prompt_tokens: 10,
-                completion_tokens: 5,
-                total_tokens: 15,
-            },
+            usage: Usage { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
             system_fingerprint: None,
         }
     }

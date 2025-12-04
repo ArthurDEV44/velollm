@@ -432,10 +432,7 @@ impl ToolOptimizer {
     pub fn validate_arguments(&self, tool_name: &str, args: &Value) -> Result<(), ToolError> {
         if let Some(validator) = self.validators.get(tool_name) {
             // Collect validation errors
-            let errors: Vec<String> = validator
-                .iter_errors(args)
-                .map(|e| e.to_string())
-                .collect();
+            let errors: Vec<String> = validator.iter_errors(args).map(|e| e.to_string()).collect();
 
             if !errors.is_empty() {
                 return Err(ToolError::ValidationFailed {
@@ -491,19 +488,13 @@ mod tests {
         assert!(ToolOptimizer::is_model_supported("mistral:7b"));
         assert!(ToolOptimizer::is_model_supported("mistral-small:24b"));
         assert!(ToolOptimizer::is_model_supported("mistral-nemo"));
-        assert_eq!(
-            ToolOptimizer::get_model_type("mistral:7b"),
-            Some(SupportedModel::Mistral)
-        );
+        assert_eq!(ToolOptimizer::get_model_type("mistral:7b"), Some(SupportedModel::Mistral));
 
         // Llama models
         assert!(ToolOptimizer::is_model_supported("llama3.1:8b"));
         assert!(ToolOptimizer::is_model_supported("llama3.2:3b"));
         assert!(ToolOptimizer::is_model_supported("llama3.3:70b"));
-        assert_eq!(
-            ToolOptimizer::get_model_type("llama3.1:8b"),
-            Some(SupportedModel::Llama)
-        );
+        assert_eq!(ToolOptimizer::get_model_type("llama3.1:8b"), Some(SupportedModel::Llama));
 
         // Unsupported models
         assert!(!ToolOptimizer::is_model_supported("qwen:7b"));
@@ -528,9 +519,11 @@ mod tests {
         let optimizer = ToolOptimizer::new();
 
         // JSON wrapped in markdown code blocks
-        let result = optimizer.fix_json(r#"```json
+        let result = optimizer.fix_json(
+            r#"```json
 {"location": "Paris"}
-```"#);
+```"#,
+        );
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), r#"{"location": "Paris"}"#);
     }

@@ -71,10 +71,7 @@ impl ResponseCache {
     /// Create a new response cache with the given configuration
     pub fn new(config: CacheConfig) -> Self {
         let metrics = Arc::new(CacheMetrics::new());
-        let exact = RwLock::new(ExactCache::new(
-            config.exact_cache_size,
-            config.exact_cache_ttl,
-        ));
+        let exact = RwLock::new(ExactCache::new(config.exact_cache_size, config.exact_cache_ttl));
 
         #[cfg(feature = "semantic-cache")]
         let semantic = if config.semantic_cache_enabled {
@@ -139,7 +136,11 @@ impl ResponseCache {
         if request.stream {
             return;
         }
-        if response.choices.iter().any(|c| c.message.tool_calls.is_some()) {
+        if response
+            .choices
+            .iter()
+            .any(|c| c.message.tool_calls.is_some())
+        {
             return;
         }
 
@@ -230,11 +231,7 @@ mod tests {
             created: 0,
             model: "llama3.2:3b".to_string(),
             choices: vec![],
-            usage: Usage {
-                prompt_tokens: 0,
-                completion_tokens: 0,
-                total_tokens: 0,
-            },
+            usage: Usage { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
             system_fingerprint: None,
         };
 

@@ -137,10 +137,7 @@ async fn main() -> anyhow::Result<()> {
     println!("  Ollama backend: {}", config.ollama_url);
     println!();
     println!("  Batcher configuration:");
-    println!(
-        "    Max concurrent: {}",
-        state.batcher_config.max_concurrent
-    );
+    println!("    Max concurrent: {}", state.batcher_config.max_concurrent);
     println!(
         "    Max queue: {} (per model: {})",
         state.batcher_config.max_queue_total, state.batcher_config.max_queue_per_model

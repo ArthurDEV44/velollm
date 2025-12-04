@@ -40,12 +40,7 @@ pub struct QueuedRequest<T> {
 impl<T> QueuedRequest<T> {
     /// Create a new queued request
     pub fn new(request: T, model: String, timeout: Duration) -> Self {
-        Self {
-            request,
-            model,
-            timer: RequestTimer::new(),
-            deadline: Instant::now() + timeout,
-        }
+        Self { request, model, timer: RequestTimer::new(), deadline: Instant::now() + timeout }
     }
 
     /// Check if this request has timed out
@@ -101,9 +96,7 @@ impl<T: Send + 'static> RequestQueue<T> {
             let total = self.total_queued.lock().await;
             if *total >= self.config.max_queue_total {
                 self.metrics.record_rejected();
-                return Err(QueueError::QueueFull {
-                    max: self.config.max_queue_total,
-                });
+                return Err(QueueError::QueueFull { max: self.config.max_queue_total });
             }
         }
 
@@ -122,10 +115,10 @@ impl<T: Send + 'static> RequestQueue<T> {
             if model_queue.len() >= self.config.max_queue_per_model {
                 self.metrics.record_rejected();
                 // Undo the queued metric since we're rejecting
-                self.metrics.requests_queued.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
-                return Err(QueueError::QueueFull {
-                    max: self.config.max_queue_per_model,
-                });
+                self.metrics
+                    .requests_queued
+                    .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+                return Err(QueueError::QueueFull { max: self.config.max_queue_per_model });
             }
 
             model_queue.push_back(queued);
@@ -448,8 +441,14 @@ mod tests {
         let queue: RequestQueue<String> = RequestQueue::new(config, metrics.clone());
 
         // Fill the queue
-        queue.enqueue("req1".to_string(), "model".to_string()).await.unwrap();
-        queue.enqueue("req2".to_string(), "model".to_string()).await.unwrap();
+        queue
+            .enqueue("req1".to_string(), "model".to_string())
+            .await
+            .unwrap();
+        queue
+            .enqueue("req2".to_string(), "model".to_string())
+            .await
+            .unwrap();
 
         // Should fail
         let result = queue.enqueue("req3".to_string(), "model".to_string()).await;
@@ -465,12 +464,21 @@ mod tests {
         let queue: RequestQueue<String> = RequestQueue::new(config, metrics.clone());
 
         // Enqueue requests for different models
-        queue.enqueue("llama_req1".to_string(), "llama3.2:3b".to_string()).await.unwrap();
-        queue.enqueue("mistral_req1".to_string(), "mistral:7b".to_string()).await.unwrap();
-        queue.enqueue("llama_req2".to_string(), "llama3.2:3b".to_string()).await.unwrap();
+        queue
+            .enqueue("llama_req1".to_string(), "llama3.2:3b".to_string())
+            .await
+            .unwrap();
+        queue
+            .enqueue("mistral_req1".to_string(), "mistral:7b".to_string())
+            .await
+            .unwrap();
+        queue
+            .enqueue("llama_req2".to_string(), "llama3.2:3b".to_string())
+            .await
+            .unwrap();
 
         // First dequeue should get from llama (longest queue initially tied, picks one)
-        let (req1, permit1) = queue.dequeue().await.unwrap();
+        let (_req1, permit1) = queue.dequeue().await.unwrap();
         // Should prioritize same model for second request
         drop(permit1);
 
@@ -487,7 +495,10 @@ mod tests {
 
         // Enqueue requests
         for i in 0..5 {
-            queue.enqueue(format!("req{}", i), "model".to_string()).await.unwrap();
+            queue
+                .enqueue(format!("req{}", i), "model".to_string())
+                .await
+                .unwrap();
         }
 
         // Should only be able to get 2 permits

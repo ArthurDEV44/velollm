@@ -42,11 +42,7 @@ pub struct AppState {
 impl AppState {
     /// Create new application state with default configurations
     pub fn new(config: ProxyConfig) -> Self {
-        Self::with_configs(
-            config,
-            BatcherConfig::from_env(),
-            CacheConfig::from_env(),
-        )
+        Self::with_configs(config, BatcherConfig::from_env(), CacheConfig::from_env())
     }
 
     /// Create new application state with custom configurations

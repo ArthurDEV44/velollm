@@ -58,10 +58,7 @@ pub async fn generate(
         request.stream = Some(true);
         let stream = state.proxy.generate_stream(&request).await?;
 
-        let body =
-            Body::from_stream(stream.map(|result| {
-                result.map_err(std::io::Error::other)
-            }));
+        let body = Body::from_stream(stream.map(|result| result.map_err(std::io::Error::other)));
 
         Ok(Response::builder()
             .status(StatusCode::OK)
@@ -114,10 +111,7 @@ pub async fn chat(
         request.stream = Some(true);
         let stream = state.proxy.chat_stream(&request).await?;
 
-        let body =
-            Body::from_stream(stream.map(|result| {
-                result.map_err(std::io::Error::other)
-            }));
+        let body = Body::from_stream(stream.map(|result| result.map_err(std::io::Error::other)));
 
         Ok(Response::builder()
             .status(StatusCode::OK)

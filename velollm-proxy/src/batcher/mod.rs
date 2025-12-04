@@ -42,10 +42,10 @@
 //! - [How Ollama Handles Parallel Requests](https://www.glukhov.org/post/2025/05/how-ollama-handles-parallel-requests/)
 //! - [Ollama FAQ](https://docs.ollama.com/faq)
 
-mod queue;
 mod config;
 mod metrics;
+mod queue;
 
 pub use config::BatcherConfig;
-pub use metrics::{BatcherMetrics, MetricsSnapshot, RequestTimer};
-pub use queue::{QueueError, QueuedRequest, RequestQueue};
+pub use metrics::BatcherMetrics;
+pub use queue::RequestQueue;

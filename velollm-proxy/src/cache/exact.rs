@@ -15,10 +15,7 @@ struct CachedEntry {
 
 impl CachedEntry {
     fn new(response: ChatCompletionResponse) -> Self {
-        Self {
-            response,
-            created_at: Instant::now(),
-        }
+        Self { response, created_at: Instant::now() }
     }
 
     fn is_expired(&self, ttl: Duration) -> bool {
@@ -39,10 +36,7 @@ impl ExactCache {
     /// Create a new exact cache with the given capacity and TTL
     pub fn new(capacity: usize, ttl: Duration) -> Self {
         let capacity = NonZeroUsize::new(capacity.max(1)).unwrap();
-        Self {
-            cache: LruCache::new(capacity),
-            ttl,
-        }
+        Self { cache: LruCache::new(capacity), ttl }
     }
 
     /// Hash a request to create a cache key
@@ -192,11 +186,7 @@ mod tests {
                 },
                 finish_reason: Some("stop".to_string()),
             }],
-            usage: Usage {
-                prompt_tokens: 10,
-                completion_tokens: 5,
-                total_tokens: 15,
-            },
+            usage: Usage { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
             system_fingerprint: None,
         }
     }
@@ -212,10 +202,7 @@ mod tests {
 
         let cached = cache.get(&request);
         assert!(cached.is_some());
-        assert_eq!(
-            cached.unwrap().choices[0].message.content,
-            Some("Hi there!".to_string())
-        );
+        assert_eq!(cached.unwrap().choices[0].message.content, Some("Hi there!".to_string()));
     }
 
     #[test]
@@ -243,14 +230,8 @@ mod tests {
 
         assert!(cached1.is_some());
         assert!(cached2.is_some());
-        assert_eq!(
-            cached1.unwrap().choices[0].message.content,
-            Some("Hi!".to_string())
-        );
-        assert_eq!(
-            cached2.unwrap().choices[0].message.content,
-            Some("Bye!".to_string())
-        );
+        assert_eq!(cached1.unwrap().choices[0].message.content, Some("Hi!".to_string()));
+        assert_eq!(cached2.unwrap().choices[0].message.content, Some("Bye!".to_string()));
     }
 
     #[test]

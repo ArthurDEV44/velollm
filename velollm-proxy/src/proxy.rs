@@ -147,10 +147,7 @@ impl OllamaProxy {
 
     /// Send a chat request with streaming
     #[instrument(skip(self, request), fields(model = %request.model, messages = request.messages.len()))]
-    pub async fn chat_stream(
-        &self,
-        request: &ChatRequest,
-    ) -> Result<ByteStream, ProxyError> {
+    pub async fn chat_stream(&self, request: &ChatRequest) -> Result<ByteStream, ProxyError> {
         let url = format!("{}/api/chat", self.base_url);
         debug!(url = %url, "Sending streaming chat request");
 

@@ -146,15 +146,27 @@ mod tests {
 
     #[test]
     fn test_successful_command() {
-        let mut cmd = Command::new("echo");
+        // Use /bin/echo explicitly to avoid shell built-in issues
+        #[cfg(unix)]
+        let mut cmd = Command::new("/bin/echo");
+        #[cfg(windows)]
+        let mut cmd = Command::new("cmd");
+
+        #[cfg(unix)]
         cmd.arg("hello");
+        #[cfg(windows)]
+        cmd.args(["/C", "echo", "hello"]);
 
-        let result = run_with_timeout(&mut cmd, Duration::from_secs(5));
-        assert!(result.completed());
+        let result = run_with_timeout(&mut cmd, Duration::from_secs(10));
 
-        if let CommandResult::Success(output) = result {
-            assert!(output.status.success());
-            assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "hello");
+        match &result {
+            CommandResult::Success(output) => {
+                assert!(output.status.success());
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                assert!(stdout.contains("hello"), "Expected 'hello' in output, got: {}", stdout);
+            }
+            CommandResult::Timeout => panic!("Command timed out unexpectedly"),
+            CommandResult::SpawnError(e) => panic!("Command failed to spawn: {}", e),
         }
     }
 

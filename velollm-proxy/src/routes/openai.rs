@@ -137,10 +137,12 @@ async fn optimize_tool_calls(
     mut response: ChatCompletionResponse,
 ) -> ChatCompletionResponse {
     // Check if there are tool calls to optimize
-    let has_tool_calls = response
-        .choices
-        .iter()
-        .any(|c| c.message.tool_calls.as_ref().is_some_and(|tc| !tc.is_empty()));
+    let has_tool_calls = response.choices.iter().any(|c| {
+        c.message
+            .tool_calls
+            .as_ref()
+            .is_some_and(|tc| !tc.is_empty())
+    });
 
     if !has_tool_calls {
         return response;
