@@ -1,9 +1,15 @@
 //! Health check and metrics endpoints.
 
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::State,
+    http::{header, StatusCode},
+    response::IntoResponse,
+    Json,
+};
 use serde_json::json;
 use std::sync::Arc;
 
+use crate::metrics;
 use crate::state::AppState;
 
 /// Health check endpoint
@@ -116,4 +122,78 @@ pub async fn ready(State(state): State<Arc<AppState>>) -> impl IntoResponse {
 /// GET /live
 pub async fn live() -> impl IntoResponse {
     StatusCode::OK
+}
+
+/// Prometheus metrics endpoint
+///
+/// GET /metrics/prometheus
+///
+/// Returns metrics in Prometheus exposition format (text/plain).
+pub async fn metrics_prometheus(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    // Sync current state to Prometheus metrics
+    let queue_depth = state.request_queue.queue_depth().await;
+    let cache_stats = state.response_cache.stats();
+    let batcher_snapshot = state.batcher_metrics.snapshot();
+    let stats = state.stats.lock().await;
+
+    // Update gauges with current values
+    metrics::set_queue_size(queue_depth as u64);
+    metrics::ACTIVE_REQUESTS.set(
+        (state.batcher_config.max_concurrent as u64
+            - state.request_queue.available_permits() as u64) as f64,
+    );
+    metrics::MAX_CONCURRENT_REQUESTS.set(state.batcher_config.max_concurrent as f64);
+
+    // Update cache size gauges
+    metrics::set_cache_size("exact", state.cache_config.exact_cache_size as u64);
+
+    // Sync cache hit/miss counters from internal stats
+    // Note: These are additive, so we only update if our prometheus counters
+    // are behind. In a real implementation, we'd instrument at the source.
+    let current_exact_hits = metrics::CACHE_HITS_TOTAL
+        .with_label_values(&["exact"])
+        .get();
+    if (cache_stats.exact_hits as f64) > current_exact_hits {
+        metrics::CACHE_HITS_TOTAL
+            .with_label_values(&["exact"])
+            .inc_by(cache_stats.exact_hits as f64 - current_exact_hits);
+    }
+
+    let current_exact_misses = metrics::CACHE_MISSES_TOTAL
+        .with_label_values(&["exact"])
+        .get();
+    if (cache_stats.exact_misses as f64) > current_exact_misses {
+        metrics::CACHE_MISSES_TOTAL
+            .with_label_values(&["exact"])
+            .inc_by(cache_stats.exact_misses as f64 - current_exact_misses);
+    }
+
+    // Sync batcher metrics
+    let current_rejected = metrics::REQUESTS_REJECTED_TOTAL.get();
+    if (batcher_snapshot.requests_rejected as f64) > current_rejected {
+        metrics::REQUESTS_REJECTED_TOTAL
+            .inc_by(batcher_snapshot.requests_rejected as f64 - current_rejected);
+    }
+
+    let current_timeout = metrics::REQUESTS_TIMEOUT_TOTAL.get();
+    if (batcher_snapshot.requests_timed_out as f64) > current_timeout {
+        metrics::REQUESTS_TIMEOUT_TOTAL
+            .inc_by(batcher_snapshot.requests_timed_out as f64 - current_timeout);
+    }
+
+    // Update throughput gauge
+    metrics::TOKENS_PER_SECOND.set(stats.avg_tokens_per_second());
+
+    // Check backend health and update gauge
+    let backend_healthy = state.proxy.health_check().await.is_ok();
+    metrics::set_backend_healthy(backend_healthy);
+
+    // Encode and return Prometheus format
+    let output = metrics::encode_metrics();
+
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        output,
+    )
 }

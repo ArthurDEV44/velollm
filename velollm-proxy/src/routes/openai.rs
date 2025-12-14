@@ -19,6 +19,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::convert::{ollama_chunk_to_openai_sse, ollama_to_openai_chat, openai_to_ollama_chat};
 use crate::error::ProxyError;
+use crate::metrics::RequestTimer;
 use crate::optimizer::ToolOptimizer;
 use crate::state::AppState;
 use crate::types::ollama::ChatResponse as OllamaChatResponse;
@@ -86,12 +87,25 @@ pub async fn chat_completions(
     let ollama_request = openai_to_ollama_chat(&request);
     let model = request.model.clone();
 
+    // Start Prometheus request timer
+    let timer = RequestTimer::new(&model);
+
     if request.stream {
         // Streaming response
         // Note: Tool call optimization for streaming is limited because we need
         // to accumulate the full response before processing tool calls
-        let stream = state.proxy.chat_stream(&ollama_request).await?;
+        let stream = match state.proxy.chat_stream(&ollama_request).await {
+            Ok(s) => s,
+            Err(e) => {
+                timer.record_failure(&e.to_string());
+                return Err(e);
+            }
+        };
         let chunk_id = format!("chatcmpl-{}", uuid::Uuid::new_v4());
+
+        // For streaming, we record success immediately (tokens counted separately)
+        // In a real implementation, we'd accumulate token count from stream
+        timer.record_success(0);
 
         // Convert Ollama stream to OpenAI SSE format
         let sse_stream = convert_stream_to_sse(stream, model.clone(), chunk_id);
@@ -105,7 +119,13 @@ pub async fn chat_completions(
             .into_response())
     } else {
         // Non-streaming response
-        let ollama_response = state.proxy.chat(&ollama_request).await?;
+        let ollama_response = match state.proxy.chat(&ollama_request).await {
+            Ok(r) => r,
+            Err(e) => {
+                timer.record_failure(&e.to_string());
+                return Err(e);
+            }
+        };
 
         // Convert to OpenAI format
         let mut openai_response = ollama_to_openai_chat(&ollama_response, &model);
@@ -115,12 +135,17 @@ pub async fn chat_completions(
             openai_response = optimize_tool_calls(&state, openai_response).await;
         }
 
+        let tokens = openai_response.usage.completion_tokens as u64;
+
         // Update stats
         {
             let mut stats = state.stats.lock().await;
             stats.requests_success += 1;
-            stats.tokens_generated += openai_response.usage.completion_tokens as u64;
+            stats.tokens_generated += tokens;
         }
+
+        // Record Prometheus metrics
+        timer.record_success(tokens);
 
         Ok(Json(openai_response).into_response())
     }

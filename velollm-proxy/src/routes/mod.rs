@@ -10,6 +10,6 @@ pub mod ollama;
 pub mod openai;
 
 // Re-export handlers for convenience
-pub use health::{health, live, metrics, ready};
+pub use health::{health, live, metrics, metrics_prometheus, ready};
 pub use ollama::{chat, generate, tags};
 pub use openai::{chat_completions, get_model, list_models};

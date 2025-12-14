@@ -15,6 +15,7 @@ use std::sync::Arc;
 use tracing::{debug, info};
 
 use crate::error::ProxyError;
+use crate::metrics::RequestTimer;
 use crate::state::AppState;
 use crate::types::ollama::{ChatRequest, GenerateRequest, TagsResponse};
 
@@ -51,12 +52,23 @@ pub async fn generate(
         stats.requests_total += 1;
     }
 
+    let model = request.model.clone();
+    let timer = RequestTimer::new(&model);
     let is_streaming = request.stream.unwrap_or(true);
 
     if is_streaming {
         // Streaming response
         request.stream = Some(true);
-        let stream = state.proxy.generate_stream(&request).await?;
+        let stream = match state.proxy.generate_stream(&request).await {
+            Ok(s) => s,
+            Err(e) => {
+                timer.record_failure(&e.to_string());
+                return Err(e);
+            }
+        };
+
+        // For streaming, record success immediately
+        timer.record_success(0);
 
         let body = Body::from_stream(stream.map(|result| result.map_err(std::io::Error::other)));
 
@@ -69,16 +81,25 @@ pub async fn generate(
     } else {
         // Non-streaming response
         request.stream = Some(false);
-        let response = state.proxy.generate(&request).await?;
+        let response = match state.proxy.generate(&request).await {
+            Ok(r) => r,
+            Err(e) => {
+                timer.record_failure(&e.to_string());
+                return Err(e);
+            }
+        };
+
+        let tokens = response.eval_count.unwrap_or(0) as u64;
 
         // Update stats with token count
         {
             let mut stats = state.stats.lock().await;
             stats.requests_success += 1;
-            if let Some(tokens) = response.eval_count {
-                stats.tokens_generated += tokens as u64;
-            }
+            stats.tokens_generated += tokens;
         }
+
+        // Record Prometheus metrics
+        timer.record_success(tokens);
 
         Ok(Json(response).into_response())
     }
@@ -104,12 +125,23 @@ pub async fn chat(
         stats.requests_total += 1;
     }
 
+    let model = request.model.clone();
+    let timer = RequestTimer::new(&model);
     let is_streaming = request.stream.unwrap_or(true);
 
     if is_streaming {
         // Streaming response
         request.stream = Some(true);
-        let stream = state.proxy.chat_stream(&request).await?;
+        let stream = match state.proxy.chat_stream(&request).await {
+            Ok(s) => s,
+            Err(e) => {
+                timer.record_failure(&e.to_string());
+                return Err(e);
+            }
+        };
+
+        // For streaming, record success immediately
+        timer.record_success(0);
 
         let body = Body::from_stream(stream.map(|result| result.map_err(std::io::Error::other)));
 
@@ -122,16 +154,25 @@ pub async fn chat(
     } else {
         // Non-streaming response
         request.stream = Some(false);
-        let response = state.proxy.chat(&request).await?;
+        let response = match state.proxy.chat(&request).await {
+            Ok(r) => r,
+            Err(e) => {
+                timer.record_failure(&e.to_string());
+                return Err(e);
+            }
+        };
+
+        let tokens = response.eval_count.unwrap_or(0) as u64;
 
         // Update stats with token count
         {
             let mut stats = state.stats.lock().await;
             stats.requests_success += 1;
-            if let Some(tokens) = response.eval_count {
-                stats.tokens_generated += tokens as u64;
-            }
+            stats.tokens_generated += tokens;
         }
+
+        // Record Prometheus metrics
+        timer.record_success(tokens);
 
         Ok(Json(response).into_response())
     }

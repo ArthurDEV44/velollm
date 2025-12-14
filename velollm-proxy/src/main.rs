@@ -51,6 +51,7 @@ mod batcher;
 mod cache;
 mod convert;
 mod error;
+mod metrics;
 mod optimizer;
 mod proxy;
 mod routes;
@@ -69,6 +70,11 @@ async fn main() -> anyhow::Result<()> {
         .with(fmt::layer().with_target(false))
         .with(filter)
         .init();
+
+    // Initialize Prometheus metrics
+    if let Err(e) = metrics::register_metrics() {
+        warn!("Failed to register Prometheus metrics: {}", e);
+    }
 
     // Load configuration
     let config = ProxyConfig::from_env();
@@ -102,6 +108,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/ready", get(routes::ready))
         .route("/live", get(routes::live))
         .route("/metrics", get(routes::metrics))
+        .route("/metrics/prometheus", get(routes::metrics_prometheus))
         // OpenAI-compatible endpoints
         .route("/v1/chat/completions", post(routes::chat_completions))
         .route("/v1/models", get(routes::list_models))
@@ -173,6 +180,7 @@ async fn main() -> anyhow::Result<()> {
     println!("    Ollama: POST /api/chat, POST /api/generate");
     println!("    Models: GET  /v1/models, GET /api/tags");
     println!("    Health: GET  /health, /ready, /live, /metrics");
+    println!("    Prometheus: GET /metrics/prometheus");
     println!();
     println!("  Supported models for tool calling:");
     println!("    - Mistral: mistral:7b, mistral:latest");

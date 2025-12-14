@@ -47,6 +47,10 @@ regex = { workspace = true }
 lru = { workspace = true }
 xxhash-rust = { workspace = true }
 
+# Prometheus metrics
+prometheus = "0.13"
+lazy_static = "1.4"
+
 # Embeddings (for semantic cache)
 fastembed = { workspace = true, optional = true }
 
