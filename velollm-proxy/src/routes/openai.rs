@@ -84,8 +84,25 @@ pub async fn chat_completions(
     }
 
     // Convert to Ollama format
-    let ollama_request = openai_to_ollama_chat(&request);
+    let mut ollama_request = openai_to_ollama_chat(&request);
     let model = request.model.clone();
+
+    // Apply prompt compression if enabled
+    let compression_result = state.prompt_compressor.compress(&mut ollama_request).await;
+    if compression_result.compressed {
+        info!(
+            original_tokens = compression_result.original_tokens,
+            compressed_tokens = compression_result.compressed_tokens,
+            ratio = format!("{:.1}%", compression_result.ratio * 100.0),
+            chars_saved = compression_result.chars_saved(),
+            "Prompt compressed"
+        );
+        // Record Prometheus metrics
+        crate::metrics::record_compression(
+            compression_result.chars_saved() as u64,
+            compression_result.ratio,
+        );
+    }
 
     // Start Prometheus request timer
     let timer = RequestTimer::new(&model);

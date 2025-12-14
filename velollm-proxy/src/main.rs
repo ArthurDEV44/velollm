@@ -27,12 +27,7 @@ async fn main() -> anyhow::Result<()> {
         .or_else(|_| std::env::var("OLLAMA_URL"))
         .unwrap_or_else(|_| "http://localhost:11434".to_string());
 
-    let config = ServerConfig {
-        port,
-        ollama_url,
-        print_banner: true,
-        ..Default::default()
-    };
+    let config = ServerConfig { port, ollama_url, print_banner: true, ..Default::default() };
 
     run_server(config).await
 }

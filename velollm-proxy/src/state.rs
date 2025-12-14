@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use crate::batcher::{BatcherConfig, BatcherMetrics, RequestQueue};
 use crate::cache::{CacheConfig, ResponseCache};
+use crate::compressor::{CompressionConfig, PromptCompressor};
 use crate::optimizer::ToolOptimizer;
 use crate::proxy::OllamaProxy;
 use crate::types::openai::ChatCompletionRequest;
@@ -32,6 +33,12 @@ pub struct AppState {
     /// Cache configuration
     pub cache_config: CacheConfig,
 
+    /// Prompt compressor
+    pub prompt_compressor: PromptCompressor,
+
+    /// Compression configuration
+    pub compressor_config: CompressionConfig,
+
     /// Runtime statistics
     pub stats: Mutex<ProxyStats>,
 
@@ -42,7 +49,12 @@ pub struct AppState {
 impl AppState {
     /// Create new application state with default configurations
     pub fn new(config: ProxyConfig) -> Self {
-        Self::with_configs(config, BatcherConfig::from_env(), CacheConfig::from_env())
+        Self::with_configs(
+            config,
+            BatcherConfig::from_env(),
+            CacheConfig::from_env(),
+            CompressionConfig::from_env(),
+        )
     }
 
     /// Create new application state with custom configurations
@@ -50,10 +62,12 @@ impl AppState {
         config: ProxyConfig,
         batcher_config: BatcherConfig,
         cache_config: CacheConfig,
+        compressor_config: CompressionConfig,
     ) -> Self {
         let batcher_metrics = Arc::new(BatcherMetrics::new());
         let request_queue = RequestQueue::new(batcher_config.clone(), batcher_metrics.clone());
         let response_cache = ResponseCache::new(cache_config.clone());
+        let prompt_compressor = PromptCompressor::new(compressor_config.clone());
 
         Self {
             proxy: OllamaProxy::new(&config.ollama_url),
@@ -63,6 +77,8 @@ impl AppState {
             batcher_config,
             response_cache,
             cache_config,
+            prompt_compressor,
+            compressor_config,
             stats: Mutex::new(ProxyStats::default()),
             config,
         }

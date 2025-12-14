@@ -191,9 +191,5 @@ pub async fn metrics_prometheus(State(state): State<Arc<AppState>>) -> impl Into
     // Encode and return Prometheus format
     let output = metrics::encode_metrics();
 
-    (
-        StatusCode::OK,
-        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
-        output,
-    )
+    (StatusCode::OK, [(header::CONTENT_TYPE, "text/plain; charset=utf-8")], output)
 }

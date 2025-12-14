@@ -533,12 +533,7 @@ async fn run_serve(
 ) -> anyhow::Result<()> {
     info!("Starting VeloLLM proxy server");
 
-    let config = ServerConfig {
-        port,
-        ollama_url,
-        max_concurrent,
-        print_banner,
-    };
+    let config = ServerConfig { port, ollama_url, max_concurrent, print_banner };
 
     velollm_proxy::run_server(config).await
 }

@@ -21,6 +21,7 @@ use tracing::{info, warn};
 
 pub mod batcher;
 pub mod cache;
+pub mod compressor;
 pub mod convert;
 pub mod error;
 pub mod metrics;
@@ -58,11 +59,7 @@ impl Default for ServerConfig {
 
 impl From<ServerConfig> for ProxyConfig {
     fn from(config: ServerConfig) -> Self {
-        ProxyConfig {
-            port: config.port,
-            ollama_url: config.ollama_url,
-            verbose: false,
-        }
+        ProxyConfig { port: config.port, ollama_url: config.ollama_url, verbose: false }
     }
 }
 
@@ -209,6 +206,35 @@ fn print_banner(config: &ServerConfig, state: &Arc<AppState>) {
     }
     #[cfg(not(feature = "semantic-cache"))]
     println!("    Semantic cache: disabled (enable with --features semantic-cache)");
+    println!();
+    println!("  Compression configuration:");
+    if state.compressor_config.enabled {
+        println!(
+            "    Enabled: yes (max: {} tokens, target: {} tokens)",
+            state.compressor_config.max_context_tokens,
+            state.compressor_config.target_context_tokens
+        );
+        println!(
+            "    Dedup: {}, Summarization: {}, System cache: {}",
+            if state.compressor_config.dedup_enabled {
+                "on"
+            } else {
+                "off"
+            },
+            if state.compressor_config.summarization_enabled {
+                "on"
+            } else {
+                "off"
+            },
+            if state.compressor_config.system_prompt_cache_enabled {
+                "on"
+            } else {
+                "off"
+            }
+        );
+    } else {
+        println!("    Enabled: no (set VELOLLM_COMPRESSION_ENABLED=true to enable)");
+    }
     println!();
     println!("  Endpoints:");
     println!("    OpenAI: POST /v1/chat/completions");

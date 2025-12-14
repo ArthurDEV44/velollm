@@ -127,6 +127,44 @@ lazy_static! {
         Opts::new("backend_healthy", "Backend health status (1=healthy, 0=unhealthy)")
             .namespace("velollm")
     ).expect("metric can be created");
+
+    // ============== Compression Metrics ==============
+
+    /// Total compression operations
+    pub static ref COMPRESSION_TOTAL: Counter = Counter::with_opts(
+        Opts::new("compression_total", "Total prompt compression operations")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Compressions skipped (under threshold)
+    pub static ref COMPRESSION_SKIPPED_TOTAL: Counter = Counter::with_opts(
+        Opts::new("compression_skipped_total", "Total compressions skipped (context under threshold)")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Characters saved by compression
+    pub static ref COMPRESSION_CHARS_SAVED_TOTAL: Counter = Counter::with_opts(
+        Opts::new("compression_chars_saved_total", "Total characters saved by compression")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Current compression ratio gauge
+    pub static ref COMPRESSION_RATIO: Gauge = Gauge::with_opts(
+        Opts::new("compression_ratio", "Current compression ratio (lower is better)")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// System prompt cache hits
+    pub static ref SYSTEM_PROMPT_CACHE_HITS_TOTAL: Counter = Counter::with_opts(
+        Opts::new("system_prompt_cache_hits_total", "Total system prompt cache hits")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Messages summarized
+    pub static ref MESSAGES_SUMMARIZED_TOTAL: Counter = Counter::with_opts(
+        Opts::new("messages_summarized_total", "Total messages summarized")
+            .namespace("velollm")
+    ).expect("metric can be created");
 }
 
 /// Register all metrics with the global registry.
@@ -159,6 +197,14 @@ pub fn register_metrics() -> prometheus::Result<()> {
     // Backend metrics
     REGISTRY.register(Box::new(BACKEND_HEALTHY.clone()))?;
 
+    // Compression metrics
+    REGISTRY.register(Box::new(COMPRESSION_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(COMPRESSION_SKIPPED_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(COMPRESSION_CHARS_SAVED_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(COMPRESSION_RATIO.clone()))?;
+    REGISTRY.register(Box::new(SYSTEM_PROMPT_CACHE_HITS_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(MESSAGES_SUMMARIZED_TOTAL.clone()))?;
+
     Ok(())
 }
 
@@ -182,10 +228,7 @@ impl RequestTimer {
     /// Start a new request timer for the given model.
     pub fn new(model: &str) -> Self {
         ACTIVE_REQUESTS.inc();
-        Self {
-            model: model.to_string(),
-            start: std::time::Instant::now(),
-        }
+        Self { model: model.to_string(), start: std::time::Instant::now() }
     }
 
     /// Record a successful request completion.
@@ -276,6 +319,28 @@ pub fn record_timeout() {
 /// Set backend health status.
 pub fn set_backend_healthy(healthy: bool) {
     BACKEND_HEALTHY.set(if healthy { 1.0 } else { 0.0 });
+}
+
+/// Record a compression operation.
+pub fn record_compression(chars_saved: u64, ratio: f64) {
+    COMPRESSION_TOTAL.inc();
+    COMPRESSION_CHARS_SAVED_TOTAL.inc_by(chars_saved as f64);
+    COMPRESSION_RATIO.set(ratio);
+}
+
+/// Record a skipped compression.
+pub fn record_compression_skipped() {
+    COMPRESSION_SKIPPED_TOTAL.inc();
+}
+
+/// Record a system prompt cache hit.
+pub fn record_system_prompt_cache_hit() {
+    SYSTEM_PROMPT_CACHE_HITS_TOTAL.inc();
+}
+
+/// Record messages summarized.
+pub fn record_messages_summarized(count: u64) {
+    MESSAGES_SUMMARIZED_TOTAL.inc_by(count as f64);
 }
 
 #[cfg(test)]
