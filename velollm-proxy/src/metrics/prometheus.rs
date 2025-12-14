@@ -165,6 +165,50 @@ lazy_static! {
         Opts::new("messages_summarized_total", "Total messages summarized")
             .namespace("velollm")
     ).expect("metric can be created");
+
+    // ============== Prefetch Metrics ==============
+
+    /// Total predictions made
+    pub static ref PREFETCH_PREDICTIONS_TOTAL: Counter = Counter::with_opts(
+        Opts::new("prefetch_predictions_total", "Total prefetch predictions made")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Tasks queued for prefetch
+    pub static ref PREFETCH_TASKS_QUEUED_TOTAL: Counter = Counter::with_opts(
+        Opts::new("prefetch_tasks_queued_total", "Total prefetch tasks queued")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Tasks successfully executed
+    pub static ref PREFETCH_TASKS_EXECUTED_TOTAL: Counter = Counter::with_opts(
+        Opts::new("prefetch_tasks_executed_total", "Total prefetch tasks executed")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Tasks dropped (queue full or expired)
+    pub static ref PREFETCH_TASKS_DROPPED_TOTAL: Counter = Counter::with_opts(
+        Opts::new("prefetch_tasks_dropped_total", "Total prefetch tasks dropped")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Cache hits from prefetched responses
+    pub static ref PREFETCH_CACHE_HITS_TOTAL: Counter = Counter::with_opts(
+        Opts::new("prefetch_cache_hits_total", "Total prefetch cache hits")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Spare permits successfully acquired
+    pub static ref PREFETCH_PERMITS_ACQUIRED_TOTAL: Counter = Counter::with_opts(
+        Opts::new("prefetch_permits_acquired_total", "Total spare permits acquired for prefetch")
+            .namespace("velollm")
+    ).expect("metric can be created");
+
+    /// Times no permit was available
+    pub static ref PREFETCH_PERMITS_UNAVAILABLE_TOTAL: Counter = Counter::with_opts(
+        Opts::new("prefetch_permits_unavailable_total", "Total times no permit was available for prefetch")
+            .namespace("velollm")
+    ).expect("metric can be created");
 }
 
 /// Register all metrics with the global registry.
@@ -204,6 +248,15 @@ pub fn register_metrics() -> prometheus::Result<()> {
     REGISTRY.register(Box::new(COMPRESSION_RATIO.clone()))?;
     REGISTRY.register(Box::new(SYSTEM_PROMPT_CACHE_HITS_TOTAL.clone()))?;
     REGISTRY.register(Box::new(MESSAGES_SUMMARIZED_TOTAL.clone()))?;
+
+    // Prefetch metrics
+    REGISTRY.register(Box::new(PREFETCH_PREDICTIONS_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(PREFETCH_TASKS_QUEUED_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(PREFETCH_TASKS_EXECUTED_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(PREFETCH_TASKS_DROPPED_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(PREFETCH_CACHE_HITS_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(PREFETCH_PERMITS_ACQUIRED_TOTAL.clone()))?;
+    REGISTRY.register(Box::new(PREFETCH_PERMITS_UNAVAILABLE_TOTAL.clone()))?;
 
     Ok(())
 }
@@ -341,6 +394,41 @@ pub fn record_system_prompt_cache_hit() {
 /// Record messages summarized.
 pub fn record_messages_summarized(count: u64) {
     MESSAGES_SUMMARIZED_TOTAL.inc_by(count as f64);
+}
+
+/// Record prefetch predictions.
+pub fn record_prefetch_predictions(count: u64) {
+    PREFETCH_PREDICTIONS_TOTAL.inc_by(count as f64);
+}
+
+/// Record a prefetch task queued.
+pub fn record_prefetch_queued() {
+    PREFETCH_TASKS_QUEUED_TOTAL.inc();
+}
+
+/// Record a prefetch task executed.
+pub fn record_prefetch_executed() {
+    PREFETCH_TASKS_EXECUTED_TOTAL.inc();
+}
+
+/// Record a prefetch task dropped.
+pub fn record_prefetch_dropped() {
+    PREFETCH_TASKS_DROPPED_TOTAL.inc();
+}
+
+/// Record a prefetch cache hit.
+pub fn record_prefetch_cache_hit() {
+    PREFETCH_CACHE_HITS_TOTAL.inc();
+}
+
+/// Record a spare permit acquired for prefetch.
+pub fn record_prefetch_permit_acquired() {
+    PREFETCH_PERMITS_ACQUIRED_TOTAL.inc();
+}
+
+/// Record no permit available for prefetch.
+pub fn record_prefetch_permit_unavailable() {
+    PREFETCH_PERMITS_UNAVAILABLE_TOTAL.inc();
 }
 
 #[cfg(test)]

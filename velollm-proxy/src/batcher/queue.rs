@@ -378,6 +378,14 @@ impl<T: Send + 'static> RequestQueue<T> {
         self.semaphore.available_permits()
     }
 
+    /// Try to get a spare permit without blocking
+    ///
+    /// Returns Some(permit) if a permit is available, None otherwise.
+    /// This is used by the prefetch system to only use spare capacity.
+    pub fn try_get_spare_permit(&self) -> Option<OwnedSemaphorePermit> {
+        self.semaphore.clone().try_acquire_owned().ok()
+    }
+
     /// Check if queue is empty
     pub async fn is_empty(&self) -> bool {
         *self.total_queued.lock().await == 0

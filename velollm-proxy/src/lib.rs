@@ -26,6 +26,7 @@ pub mod convert;
 pub mod error;
 pub mod metrics;
 pub mod optimizer;
+pub mod prefetch;
 pub mod proxy;
 pub mod routes;
 pub mod state;
@@ -234,6 +235,21 @@ fn print_banner(config: &ServerConfig, state: &Arc<AppState>) {
         );
     } else {
         println!("    Enabled: no (set VELOLLM_COMPRESSION_ENABLED=true to enable)");
+    }
+    println!();
+    println!("  Prefetch configuration:");
+    if state.prefetch_config.enabled {
+        println!(
+            "    Enabled: yes (max predictions: {}, confidence: {:.0}%)",
+            state.prefetch_config.max_predictions,
+            state.prefetch_config.min_confidence * 100.0
+        );
+        println!(
+            "    Cache TTL: {}s, Queue size: {}",
+            state.prefetch_config.cache_ttl_secs, state.prefetch_config.max_queue_size
+        );
+    } else {
+        println!("    Enabled: no (set VELOLLM_PREFETCH_ENABLED=true to enable)");
     }
     println!();
     println!("  Endpoints:");

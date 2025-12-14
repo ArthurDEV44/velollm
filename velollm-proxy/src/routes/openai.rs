@@ -164,6 +164,20 @@ pub async fn chat_completions(
         // Record Prometheus metrics
         timer.record_success(tokens);
 
+        // Trigger prefetch predictions for follow-up queries
+        if state.prefetch_service.is_enabled() {
+            let response_content = openai_response
+                .choices
+                .first()
+                .and_then(|c| c.message.content.as_ref())
+                .map(|s| s.as_str())
+                .unwrap_or("");
+            state
+                .prefetch_service
+                .on_response(&ollama_request.messages, &model, response_content)
+                .await;
+        }
+
         Ok(Json(openai_response).into_response())
     }
 }
