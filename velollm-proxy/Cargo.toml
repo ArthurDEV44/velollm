@@ -6,6 +6,10 @@ authors.workspace = true
 license.workspace = true
 description = "High-performance proxy for local LLM inference optimization"
 
+[lib]
+name = "velollm_proxy"
+path = "src/lib.rs"
+
 [[bin]]
 name = "velollm-proxy"
 path = "src/main.rs"

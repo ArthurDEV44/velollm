@@ -5,6 +5,7 @@ use velollm_adapters_ollama::OllamaConfig;
 use velollm_benchmarks::{get_standard_benchmarks, BenchmarkRunner};
 use velollm_core::hardware::HardwareSpec;
 use velollm_core::optimizer::{OllamaOptimizer, OptimizedConfig};
+use velollm_proxy::ServerConfig;
 
 #[derive(Parser)]
 #[command(name = "velollm")]
@@ -57,6 +58,25 @@ enum Commands {
         #[arg(short, long)]
         output: Option<String>,
     },
+
+    /// Start the VeloLLM proxy server
+    Serve {
+        /// Port to listen on
+        #[arg(short, long, default_value = "8000")]
+        port: u16,
+
+        /// Ollama backend URL
+        #[arg(long, default_value = "http://localhost:11434")]
+        ollama_url: String,
+
+        /// Maximum concurrent requests
+        #[arg(long, default_value = "4")]
+        max_concurrent: usize,
+
+        /// Disable startup banner
+        #[arg(long)]
+        no_banner: bool,
+    },
 }
 
 /// Initialize tracing subscriber with appropriate log level
@@ -101,6 +121,9 @@ async fn main() -> anyhow::Result<()> {
             run_benchmark(&backend, &model, output).await
         }
         Commands::Optimize { dry_run, output } => run_optimize(dry_run, output).await,
+        Commands::Serve { port, ollama_url, max_concurrent, no_banner } => {
+            run_serve(port, ollama_url, max_concurrent, !no_banner).await
+        }
     };
 
     if let Err(ref e) = result {
@@ -498,4 +521,24 @@ fn generate_shell_script(config: &OllamaConfig) -> String {
     script.push('\n');
 
     script
+}
+
+/// Start the VeloLLM proxy server
+#[instrument(skip_all, fields(port = port, ollama_url = %ollama_url))]
+async fn run_serve(
+    port: u16,
+    ollama_url: String,
+    max_concurrent: usize,
+    print_banner: bool,
+) -> anyhow::Result<()> {
+    info!("Starting VeloLLM proxy server");
+
+    let config = ServerConfig {
+        port,
+        ollama_url,
+        max_concurrent,
+        print_banner,
+    };
+
+    velollm_proxy::run_server(config).await
 }

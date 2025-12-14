@@ -14,6 +14,7 @@ path = "src/main.rs"
 velollm-core = { path = "../velollm-core" }
 velollm-benchmarks = { path = "../velollm-benchmarks" }
 velollm-adapters-ollama = { path = "../adapters/ollama" }
+velollm-proxy = { path = "../velollm-proxy" }
 
 clap = { workspace = true }
 serde = { workspace = true }
