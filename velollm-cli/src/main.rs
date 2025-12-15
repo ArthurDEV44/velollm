@@ -76,6 +76,22 @@ enum Commands {
         /// Disable startup banner
         #[arg(long)]
         no_banner: bool,
+
+        /// Enable multi-model routing (route requests to optimal model based on complexity)
+        #[arg(long)]
+        enable_router: bool,
+
+        /// Small model for simple queries (used with --enable-router)
+        #[arg(long, default_value = "llama3.2:1b")]
+        small_model: String,
+
+        /// Medium model for moderate complexity (used with --enable-router)
+        #[arg(long, default_value = "llama3.2:3b")]
+        medium_model: String,
+
+        /// Large model for complex queries (used with --enable-router)
+        #[arg(long, default_value = "llama3.1:8b")]
+        large_model: String,
     },
 }
 
@@ -121,8 +137,27 @@ async fn main() -> anyhow::Result<()> {
             run_benchmark(&backend, &model, output).await
         }
         Commands::Optimize { dry_run, output } => run_optimize(dry_run, output).await,
-        Commands::Serve { port, ollama_url, max_concurrent, no_banner } => {
-            run_serve(port, ollama_url, max_concurrent, !no_banner).await
+        Commands::Serve {
+            port,
+            ollama_url,
+            max_concurrent,
+            no_banner,
+            enable_router,
+            small_model,
+            medium_model,
+            large_model,
+        } => {
+            run_serve(
+                port,
+                ollama_url,
+                max_concurrent,
+                !no_banner,
+                enable_router,
+                small_model,
+                medium_model,
+                large_model,
+            )
+            .await
         }
     };
 
@@ -523,15 +558,45 @@ fn generate_shell_script(config: &OllamaConfig) -> String {
     script
 }
 
+/// Router CLI options
+struct RouterOptions {
+    enabled: bool,
+    small_model: String,
+    medium_model: String,
+    large_model: String,
+}
+
 /// Start the VeloLLM proxy server
 #[instrument(skip_all, fields(port = port, ollama_url = %ollama_url))]
+#[allow(clippy::too_many_arguments)]
 async fn run_serve(
     port: u16,
     ollama_url: String,
     max_concurrent: usize,
     print_banner: bool,
+    enable_router: bool,
+    small_model: String,
+    medium_model: String,
+    large_model: String,
 ) -> anyhow::Result<()> {
     info!("Starting VeloLLM proxy server");
+
+    let router_opts =
+        RouterOptions { enabled: enable_router, small_model, medium_model, large_model };
+
+    // Set router environment variables if enabled via CLI
+    if router_opts.enabled {
+        std::env::set_var("VELOLLM_ROUTER_ENABLED", "true");
+        std::env::set_var("VELOLLM_SMALL_MODEL", &router_opts.small_model);
+        std::env::set_var("VELOLLM_MEDIUM_MODEL", &router_opts.medium_model);
+        std::env::set_var("VELOLLM_LARGE_MODEL", &router_opts.large_model);
+        info!(
+            small = %router_opts.small_model,
+            medium = %router_opts.medium_model,
+            large = %router_opts.large_model,
+            "Multi-model routing enabled"
+        );
+    }
 
     let config = ServerConfig { port, ollama_url, max_concurrent, print_banner };
 

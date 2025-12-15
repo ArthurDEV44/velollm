@@ -28,6 +28,7 @@ pub mod metrics;
 pub mod optimizer;
 pub mod prefetch;
 pub mod proxy;
+pub mod router;
 pub mod routes;
 pub mod state;
 pub mod types;
@@ -250,6 +251,24 @@ fn print_banner(config: &ServerConfig, state: &Arc<AppState>) {
         );
     } else {
         println!("    Enabled: no (set VELOLLM_PREFETCH_ENABLED=true to enable)");
+    }
+    println!();
+    println!("  Router configuration:");
+    if state.router_config.enabled {
+        println!(
+            "    Enabled: yes (thresholds: small < {:.0}%, large > {:.0}%)",
+            state.router_config.small_threshold * 100.0,
+            state.router_config.large_threshold * 100.0
+        );
+        println!(
+            "    Models: {} / {} / {}",
+            state.router_config.small_model,
+            state.router_config.medium_model,
+            state.router_config.large_model
+        );
+        println!("    Use model=\"auto\" to enable automatic routing");
+    } else {
+        println!("    Enabled: no (set VELOLLM_ROUTER_ENABLED=true to enable)");
     }
     println!();
     println!("  Endpoints:");

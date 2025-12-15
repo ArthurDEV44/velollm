@@ -8,6 +8,7 @@ use crate::compressor::{CompressionConfig, PromptCompressor};
 use crate::optimizer::ToolOptimizer;
 use crate::prefetch::{PrefetchConfig, PrefetchService};
 use crate::proxy::OllamaProxy;
+use crate::router::{ModelRouter, RouterConfig};
 use crate::types::openai::ChatCompletionRequest;
 use tokio::sync::Mutex;
 
@@ -46,6 +47,12 @@ pub struct AppState {
     /// Prefetch configuration
     pub prefetch_config: PrefetchConfig,
 
+    /// Model router for multi-model load balancing
+    pub model_router: ModelRouter,
+
+    /// Router configuration
+    pub router_config: RouterConfig,
+
     /// Runtime statistics
     pub stats: Mutex<ProxyStats>,
 
@@ -62,6 +69,7 @@ impl AppState {
             CacheConfig::from_env(),
             CompressionConfig::from_env(),
             PrefetchConfig::from_env(),
+            RouterConfig::from_env(),
         )
     }
 
@@ -72,12 +80,14 @@ impl AppState {
         cache_config: CacheConfig,
         compressor_config: CompressionConfig,
         prefetch_config: PrefetchConfig,
+        router_config: RouterConfig,
     ) -> Self {
         let batcher_metrics = Arc::new(BatcherMetrics::new());
         let request_queue = RequestQueue::new(batcher_config.clone(), batcher_metrics.clone());
         let response_cache = ResponseCache::new(cache_config.clone());
         let prompt_compressor = PromptCompressor::new(compressor_config.clone());
         let prefetch_service = PrefetchService::new(prefetch_config.clone());
+        let model_router = ModelRouter::new(router_config.clone());
 
         Self {
             proxy: OllamaProxy::new(&config.ollama_url),
@@ -91,6 +101,8 @@ impl AppState {
             compressor_config,
             prefetch_service,
             prefetch_config,
+            model_router,
+            router_config,
             stats: Mutex::new(ProxyStats::default()),
             config,
         }

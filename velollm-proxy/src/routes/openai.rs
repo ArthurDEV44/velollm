@@ -38,7 +38,7 @@ use crate::types::openai::{ChatCompletionRequest, ChatCompletionResponse, Model,
 /// - Validation against JSON Schema
 pub async fn chat_completions(
     State(state): State<Arc<AppState>>,
-    Json(request): Json<ChatCompletionRequest>,
+    Json(mut request): Json<ChatCompletionRequest>,
 ) -> Result<Response, ProxyError> {
     info!(
         model = %request.model,
@@ -47,6 +47,20 @@ pub async fn chat_completions(
         has_tools = request.has_tools(),
         "Handling POST /v1/chat/completions"
     );
+
+    // Apply multi-model routing if enabled
+    let routing_decision = state.model_router.route(&request);
+    if routing_decision.was_routed {
+        info!(
+            original = %routing_decision.original_model,
+            selected = %routing_decision.selected_model,
+            tier = %routing_decision.tier,
+            complexity = routing_decision.complexity.total,
+            reason = %routing_decision.reason,
+            "Request routed to optimal model"
+        );
+        request.model = routing_decision.selected_model.clone();
+    }
 
     // Validate model is Mistral or Llama for tool calling
     let has_tools = request.has_tools();
